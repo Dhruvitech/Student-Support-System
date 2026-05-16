@@ -1,0 +1,158 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android
+.gradle/
+local.properties
+*.keystore
+*.jks
+**/android/app/key.properties
+
+# iOS/macOS
+**/.DS_Store
+**/DerivedData/
+**/Pods/
+**/Generated/
+**/Runner/GeneratedPluginRegistrant.h
+**/Runner/GeneratedPluginRegistrant.m
+**/Frameworks/
+**/App.framework
+**/Flutter.framework
+**/Flutter.podspec
+**/Index/
+**/Scripts/
+**/*.xcworkspace
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Large Files & Backups
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# Documentation (As requested)
+*.md
+!README.md  # Keep README if you want, or remove this line to hide everything
+
+# Logs
+*.log
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+.env.example
+*.key
+*.pem
+*.pub
+*.ppk
+*.pfx
+
+# Firebase & API Keys
+**/*firebase*.json
+assets/mentalhealthbot-tilr-4c4fce8f4adb.json
+assets/*-firebase-*.json
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/config/firebase_config.dart
+lib/config/app_config.dart
+lib/config/app_config_check.dart
+
+# Private API Keys & Credentials
+apiforchatbot.txt
+**/api_keys.dart
+**/api_keys.json
+**/secrets.dart
+**/secrets.json
+**/*_private.txt
+**/*_secret.txt
+**/*_password.txt
+**/*_token.txt
+**/*credentials*
+**/*apikey*
+**/*api_key*
+**/*client_secret*
+**/*service-account*
+**/*private*
+**/*secret*
+**/*token*
+**/*password*
+
+# Database Credentials
+**/database_config.dart
+**/db_credentials.json
+
+# AWS, GCP, Azure Credentials
+aws.json
+gcp-credentials.json
+*.p8
+.aws/
+
+# Private Keys
+**/private_key.dart
+**/private_key.json
+rsa_private_key.pem
+dsa_private_key.pem
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE Specific
+.classpath
+.project
+.settings/
+.c9/
+*.launch
+.metadata
+
+# Miscellaneous
+*.class
+!pubspec.lock
+*.log
+*.swp
+*.swo
+*~
+.AppleDouble
+.LSOverride
+
+# Flutter specific
+.flutter/
+android/app/build/
+ios/Flutter/Flutter.framework
+ios/Flutter/App.framework
+*.g.dart
+*.freezed.dart
+coverage/
+.coverage
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.realm
+*.realm.lock
+**/mongo_*.json
+
+# Web build
+web/flutter_service_worker.js
+build/web/
