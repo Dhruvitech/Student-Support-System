@@ -8,6 +8,7 @@ class LostAndFoundModel {
   final String date;
   final String postedBy;
   final String userId;
+  final String contactNumber; // ✅ NEW
   final DateTime createdAt;
 
   LostAndFoundModel({
@@ -20,6 +21,7 @@ class LostAndFoundModel {
     required this.date,
     required this.postedBy,
     required this.userId,
+    required this.contactNumber, // ✅ NEW
     required this.createdAt,
   });
 
@@ -34,6 +36,7 @@ class LostAndFoundModel {
       date: map['date'] ?? '',
       postedBy: map['postedBy'] ?? '',
       userId: map['userId'] ?? '',
+      contactNumber: map['contactNumber'] ?? '', 
       createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
     );
   }
@@ -48,6 +51,7 @@ class LostAndFoundModel {
       'date': date,
       'postedBy': postedBy,
       'userId': userId,
+      'contactNumber': contactNumber, 
       'createdAt': createdAt,
     };
   }

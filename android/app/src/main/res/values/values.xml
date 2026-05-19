@@ -1,0 +1,8 @@
+<resources>
+<string name="gcm_defaultSenderId" translatable="false">184463524483</string>
+<string name="google_api_key" translatable="false">AIzaSyBanlyEZ_ph1clL4_szpLkyX52KnzTgvIU</string>
+<string name="google_app_id" translatable="false">1:184463524483:android:7e0c554d5eebda1bb111b6</string>
+<string name="google_crash_reporting_api_key" translatable="false">AIzaSyBanlyEZ_ph1clL4_szpLkyX52KnzTgvIU</string>
+<string name="google_storage_bucket" translatable="false">student-support-system-flutter.firebasestorage.app</string>
+<string name="project_id" translatable="false">student-support-system-flutter</string>
+</resources>

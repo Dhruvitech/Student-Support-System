@@ -245,7 +245,7 @@ class StudentDashboard extends StatelessWidget {
                       gradientColors: [const Color(0xFF0EA5E9), const Color(0xFF0284C7)],
                       onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => LostAndFoundScreen()),
+                      MaterialPageRoute(builder: (_) => LostAndFoundAdminScreen()),
                      ),
                     ),
                   ],

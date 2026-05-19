@@ -54,9 +54,7 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
 
           final items = _filter == 'all'
               ? snapshot.data!
-              : snapshot.data!
-                  .where((i) => i.status == _filter)
-                  .toList();
+              : snapshot.data!.where((i) => i.status == _filter).toList();
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -73,6 +71,7 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Title + Status Badge
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -111,8 +110,12 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
+
+                      // Description
                       Text(item.description),
                       const SizedBox(height: 8),
+
+                      // Location + Category
                       Row(
                         children: [
                           const Icon(Icons.location_on, size: 16),
@@ -125,14 +128,36 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
+
+                      // Posted by + Date
                       Text(
                         'Posted by: ${item.postedBy} • ${item.date}',
                         style: theme.textTheme.bodySmall,
                       ),
+                      const SizedBox(height: 4),
+
+                      // ✅ Contact Number
+                      if (item.contactNumber.isNotEmpty)
+                        Row(
+                          children: [
+                            const Icon(Icons.phone, size: 16,
+                                color: Colors.teal),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Contact: ${item.contactNumber}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.teal,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+
                       const SizedBox(height: 12),
+
+                      // Action Buttons — ✅ "Mark Found" removed
                       Row(
                         children: [
-                          // Status Change Buttons
                           if (item.status != 'lost')
                             TextButton(
                               onPressed: () =>
@@ -140,13 +165,7 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                               child: const Text('Mark Lost',
                                   style: TextStyle(color: Colors.red)),
                             ),
-                          if (item.status != 'found')
-                            TextButton(
-                              onPressed: () =>
-                                  _service.updateStatus(item.id, 'found'),
-                              child: const Text('Mark Found',
-                                  style: TextStyle(color: Colors.green)),
-                            ),
+                          // ❌ "Mark Found" button removed
                           if (item.status != 'resolved')
                             TextButton(
                               onPressed: () =>
@@ -155,9 +174,9 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                                   style: TextStyle(color: Colors.blue)),
                             ),
                           const Spacer(),
-                          // Delete Button
                           IconButton(
-                            onPressed: () => _showDeleteDialog(context, item.id),
+                            onPressed: () =>
+                                _showDeleteDialog(context, item.id),
                             icon: const Icon(Icons.delete, color: Colors.red),
                           ),
                         ],
@@ -189,8 +208,8 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
               await _service.deleteItem(itemId);
               Navigator.pop(context);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: Colors.red)),
+            child:
+                const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -201,6 +220,7 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
     final titleController = TextEditingController();
     final descController = TextEditingController();
     final locationController = TextEditingController();
+    final contactController = TextEditingController(); // ✅ NEW
     String selectedStatus = 'lost';
     String selectedCategory = 'Electronics';
 
@@ -218,124 +238,143 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
             right: 24,
             top: 24,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Add Item',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Item Title',
-                  border: OutlineInputBorder(),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Add Item',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: locationController,
-                decoration: const InputDecoration(
-                  labelText: 'Location',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: selectedStatus,
-                      decoration: const InputDecoration(
-                        labelText: 'Status',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'lost', child: Text('Lost')),
-                        DropdownMenuItem(
-                            value: 'found', child: Text('Found')),
-                      ],
-                      onChanged: (v) =>
-                          setModalState(() => selectedStatus = v!),
-                    ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Item Title',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: selectedCategory,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'Electronics',
-                            child: Text('Electronics')),
-                        DropdownMenuItem(
-                            value: 'Books', child: Text('Books')),
-                        DropdownMenuItem(
-                            value: 'Clothing', child: Text('Clothing')),
-                        DropdownMenuItem(
-                            value: 'Other', child: Text('Other')),
-                      ],
-                      onChanged: (v) =>
-                          setModalState(() => selectedCategory = v!),
-                    ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (titleController.text.isEmpty) return;
-                    try {
-                      await FirebaseFirestore.instance
-                          .collection('lost_and_found')
-                          .add({
-                        'title': titleController.text,
-                        'description': descController.text,
-                        'category': selectedCategory,
-                        'status': selectedStatus,
-                        'location': locationController.text,
-                        'date': DateTime.now().toString().split(' ')[0],
-                        'postedBy': 'Admin',
-                        'userId': 'admin',
-                        'createdAt': FieldValue.serverTimestamp(),
-                      });
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('✅ Item added successfully!'),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: locationController,
+                  decoration: const InputDecoration(
+                    labelText: 'Location',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ✅ Contact Number Field
+                TextField(
+                  controller: contactController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact Number',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: selectedStatus,
+                        decoration: const InputDecoration(
+                          labelText: 'Status',
+                          border: OutlineInputBorder(),
                         ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
-                      );
-                    }
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text('Add Item'),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'lost', child: Text('Lost')),
+                          DropdownMenuItem(
+                              value: 'found', child: Text('Found')),
+                        ],
+                        onChanged: (v) =>
+                            setModalState(() => selectedStatus = v!),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: selectedCategory,
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'Electronics',
+                              child: Text('Electronics')),
+                          DropdownMenuItem(
+                              value: 'Books', child: Text('Books')),
+                          DropdownMenuItem(
+                              value: 'Clothing', child: Text('Clothing')),
+                          DropdownMenuItem(
+                              value: 'Other', child: Text('Other')),
+                        ],
+                        onChanged: (v) =>
+                            setModalState(() => selectedCategory = v!),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (titleController.text.isEmpty) return;
+                      try {
+                        await FirebaseFirestore.instance
+                            .collection('lost_and_found')
+                            .add({
+                          'title': titleController.text,
+                          'description': descController.text,
+                          'category': selectedCategory,
+                          'status': selectedStatus,
+                          'location': locationController.text,
+                          'date':
+                              DateTime.now().toString().split(' ')[0],
+                          'postedBy': 'Admin',
+                          'userId': 'admin',
+                          'contactNumber': contactController.text, // ✅ NEW
+                          'createdAt': FieldValue.serverTimestamp(),
+                        });
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✅ Item added successfully!'),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')),
+                        );
+                      }
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text('Add Item'),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
