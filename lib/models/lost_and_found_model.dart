@@ -8,8 +8,9 @@ class LostAndFoundModel {
   final String date;
   final String postedBy;
   final String userId;
-  final String contactNumber; // ✅ NEW
+  final String contactNumber; 
   final DateTime createdAt;
+  final String? imageUrl; 
 
   LostAndFoundModel({
     required this.id,
@@ -21,8 +22,10 @@ class LostAndFoundModel {
     required this.date,
     required this.postedBy,
     required this.userId,
-    required this.contactNumber, // ✅ NEW
+    required this.contactNumber,
     required this.createdAt,
+    this.imageUrl,        
+
   });
 
   factory LostAndFoundModel.fromMap(Map<String, dynamic> map, String id) {
@@ -38,6 +41,7 @@ class LostAndFoundModel {
       userId: map['userId'] ?? '',
       contactNumber: map['contactNumber'] ?? '', 
       createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
+      imageUrl: map['imageUrl'] ?? '',
     );
   }
 
@@ -53,6 +57,7 @@ class LostAndFoundModel {
       'userId': userId,
       'contactNumber': contactNumber, 
       'createdAt': createdAt,
+      'imageUrl': imageUrl ?? '', 
     };
   }
 }
