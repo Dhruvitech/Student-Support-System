@@ -1,12 +1,12 @@
-
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../../models/lost_and_found_model.dart';
 import '../../services/lost_and_found_service.dart';
-import 'dart:typed_data';
 
 class LostAndFoundAdminScreen extends StatefulWidget {
   const LostAndFoundAdminScreen({super.key});
@@ -28,7 +28,7 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lost & Found'),
+        title: const Text('Lost & Found - Admin'),
         actions: [
           DropdownButton<String>(
             value: _filter,
@@ -122,34 +122,36 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // ── Photo (shown if uploaded) ──
-                      if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            item.imageUrl!,
-                            height: 180,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, progress) {
-                              if (progress == null) return child;
-                              return Container(
-                                height: 180,
-                                color: Colors.grey.shade100,
-                                child: const Center(
-                                    child: CircularProgressIndicator()),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                              height: 60,
-                              color: Colors.grey.shade100,
-                              child: const Center(
-                                  child: Icon(Icons.broken_image,
-                                      color: Colors.grey)),
-                            ),
-                          ),
-                        ),
+                      // ── Photo ──
+                     if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+  ClipRRect(
+    borderRadius: BorderRadius.circular(10),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 250),
+      child: Image.network(
+        item.imageUrl!,
+        width: double.infinity,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return Container(
+            height: 150,
+            color: Colors.grey.shade100,
+            child: const Center(
+                child: CircularProgressIndicator()),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) =>
+            Container(
+          height: 60,
+          color: Colors.grey.shade100,
+          child: const Center(
+              child: Icon(Icons.broken_image,
+                  color: Colors.grey)),
+        ),
+      ),
+    ),
+  ),
                       if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
                         const SizedBox(height: 8),
 
@@ -198,14 +200,16 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                       const SizedBox(height: 12),
 
                       // ── Action Buttons ──
-                      // ✅ Rule 1: resolved → no Mark Lost/Found buttons at all
-                      // ✅ Rule 2: only owner sees buttons
-                      // ✅ Rule 3: owner can still delete even after resolved
                       if (isOwner && !isResolved)
                         Row(
                           children: [
-                            
-                           
+                            if (item.status != 'found')
+                              TextButton(
+                                onPressed: () =>
+                                    _service.updateStatus(item.id, 'found'),
+                                child: const Text('Mark Found',
+                                    style: TextStyle(color: Colors.green)),
+                              ),
                             TextButton(
                               onPressed: () =>
                                   _service.updateStatus(item.id, 'resolved'),
@@ -222,7 +226,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                           ],
                         ),
 
-                      // ✅ After resolved: only show label + delete, no other buttons
                       if (isOwner && isResolved)
                         Row(
                           children: [
@@ -256,9 +259,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────
-  // Delete Dialog
-  // ─────────────────────────────────────────────────────
   void _showDeleteDialog(BuildContext context, String itemId) {
     showDialog(
       context: context,
@@ -283,9 +283,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────
-  // Add Item Dialog (with photo upload)
-  // ─────────────────────────────────────────────────────
   void _showAddItemDialog(BuildContext context) {
     final titleController = TextEditingController();
     final descController = TextEditingController();
@@ -323,7 +320,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-
                 TextField(
                   controller: titleController,
                   decoration: const InputDecoration(
@@ -332,7 +328,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 TextField(
                   controller: descController,
                   decoration: const InputDecoration(
@@ -342,7 +337,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                   maxLines: 2,
                 ),
                 const SizedBox(height: 12),
-
                 TextField(
                   controller: locationController,
                   decoration: const InputDecoration(
@@ -351,7 +345,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 TextField(
                   controller: contactController,
                   keyboardType: TextInputType.phone,
@@ -379,16 +372,16 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                               onTap: () async {
                                 Navigator.pop(ctx);
                                 final img = await picker.pickImage(
-                                source: ImageSource.camera,
-                                imageQuality: 70,
+                                  source: ImageSource.camera,
+                                  imageQuality: 70,
                                 );
                                 if (img != null) {
-                                final bytes = await img.readAsBytes();
-                                setModalState(() {
-                                pickedImage = img;
-                                pickedImageBytes = bytes;
-                                 });
-                               }
+                                  final bytes = await img.readAsBytes();
+                                  setModalState(() {
+                                    pickedImage = img;
+                                    pickedImageBytes = bytes;
+                                  });
+                                }
                               },
                             ),
                             ListTile(
@@ -396,17 +389,17 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                               title: const Text('Choose from Gallery'),
                               onTap: () async {
                                 Navigator.pop(ctx);
-                               final img = await picker.pickImage(
-  source: ImageSource.gallery,
-  imageQuality: 70,
-);
-if (img != null) {
-  final bytes = await img.readAsBytes();
-  setModalState(() {
-    pickedImage = img;
-    pickedImageBytes = bytes;
-  });
-}
+                                final img = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  imageQuality: 70,
+                                );
+                                if (img != null) {
+                                  final bytes = await img.readAsBytes();
+                                  setModalState(() {
+                                    pickedImage = img;
+                                    pickedImageBytes = bytes;
+                                  });
+                                }
                               },
                             ),
                           ],
@@ -416,20 +409,20 @@ if (img != null) {
                   },
                   child: Container(
                     width: double.infinity,
-                    height: pickedImageBytes != null ? 160 : 80,
+                    height: pickedImageBytes != null ? 200 : 80,
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey.shade400),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.grey.shade50,
                     ),
-                   child: pickedImageBytes != null
-                   ? ClipRRect(
-                   borderRadius: BorderRadius.circular(12),
-                   child: Image.memory(
-                   pickedImageBytes!,
-                   fit: BoxFit.cover,
-                   ),
-                     )
+                    child: pickedImageBytes != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.memory(
+                              pickedImageBytes!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
                         : const Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -499,18 +492,34 @@ if (img != null) {
                             if (titleController.text.isEmpty) return;
                             setModalState(() => isUploading = true);
                             try {
-                              // ── Upload photo if selected ──
                               String imageUrl = '';
-                            if (pickedImage != null && pickedImageBytes != null) {
-  final ref = FirebaseStorage.instance
-      .ref()
-      .child('lost_and_found')
-      .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
-  await ref.putData(pickedImageBytes!);  // ← putData works on web
-  imageUrl = await ref.getDownloadURL();
-}
 
-                              // ── Save to Firestore ──
+                              // ✅ Cloudinary upload — no Firebase Storage needed
+                              if (pickedImage != null &&
+                                  pickedImageBytes != null) {
+                                final uri = Uri.parse(
+                                  'https://api.cloudinary.com/v1_1/dysq5hcep/image/upload',
+                                );
+                                final request =
+                                    http.MultipartRequest('POST', uri)
+                                      ..fields['upload_preset'] =
+                                          'lost_and_found'
+                                      ..files.add(
+                                        http.MultipartFile.fromBytes(
+                                          'file',
+                                          pickedImageBytes!,
+                                          filename:
+                                              '${DateTime.now().millisecondsSinceEpoch}.jpg',
+                                        ),
+                                      );
+                                final response = await request.send();
+                                final res =
+                                    await http.Response.fromStream(response);
+                                final data = jsonDecode(res.body);
+                                imageUrl = data['secure_url'] ?? '';
+                              }
+
+                              // ✅ Save to Firestore
                               await FirebaseFirestore.instance
                                   .collection('lost_and_found')
                                   .add({
@@ -524,12 +533,12 @@ if (img != null) {
                                     .split(' ')[0],
                                 'postedBy': FirebaseAuth.instance
                                         .currentUser?.displayName ??
-                                    'User',
+                                    'Admin',
                                 'userId':
                                     FirebaseAuth.instance.currentUser?.uid ??
                                         '',
                                 'contactNumber': contactController.text,
-                                'imageUrl': imageUrl, // ✅ photo URL saved
+                                'imageUrl': imageUrl,
                                 'createdAt': FieldValue.serverTimestamp(),
                               });
 
@@ -542,8 +551,13 @@ if (img != null) {
                               );
                             } catch (e) {
                               setModalState(() => isUploading = false);
+                              Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
+                                SnackBar(
+                                  content: Text('Error: $e'),
+                                  duration: const Duration(seconds: 10),
+                                  backgroundColor: Colors.red,
+                                ),
                               );
                             }
                           },
