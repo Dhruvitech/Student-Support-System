@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../services/firestore_service.dart';
 import '../../models/user_model.dart';
+import '../file_viewer_screen.dart';
 
 class ViewSubmissionsScreen extends StatelessWidget {
   final String assignmentId;
@@ -57,7 +57,7 @@ class ViewSubmissionsScreen extends StatelessWidget {
                         children: [
                           if (enrollment.isNotEmpty) Text("Enrollment: $enrollment"),
                           const SizedBox(height: 4),
-                          Text("File URL: $fileUrl", maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text("File ID: $fileUrl", maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ),
                       trailing: Row(
@@ -65,11 +65,11 @@ class ViewSubmissionsScreen extends StatelessWidget {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.copy),
-                            tooltip: 'Copy File Link',
+                            tooltip: 'Copy File ID',
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: fileUrl));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Link copied to clipboard!')),
+                                const SnackBar(content: Text('File ID copied to clipboard!')),
                               );
                             },
                           ),
@@ -77,15 +77,17 @@ class ViewSubmissionsScreen extends StatelessWidget {
                             icon: const Icon(Icons.download_rounded),
                             tooltip: 'View/Download Assignment',
                             color: Theme.of(context).colorScheme.primary,
-                            onPressed: () async {
-                              final Uri url = Uri.parse(fileUrl);
-                              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Could not open the file')),
-                                  );
-                                }
-                              }
+                            onPressed: () {
+                              // Navigate to file viewer
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FileViewerScreen(
+                                    fileId: fileUrl,
+                                    fileName: '$studentName - Submission',
+                                  ),
+                                ),
+                              );
                             },
                           ),
                         ],

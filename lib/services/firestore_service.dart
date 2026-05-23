@@ -665,4 +665,18 @@ class FirestoreService {
       .where('assignmentId', isEqualTo: assignmentId)
       .snapshots();
 }
+
+  // Get file data by document ID
+  Future<Map<String, dynamic>?> getFileData(String fileId) async {
+    try {
+      final doc = await _firestore.collection('files').doc(fileId).get();
+      if (doc.exists) {
+        return doc.data();
+      }
+      return null;
+    } catch (e) {
+      print("Error fetching file data: $e");
+      return null;
+    }
+  }
 }
