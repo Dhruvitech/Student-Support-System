@@ -42,23 +42,20 @@ Remember: You are a supportive friend, not a replacement for professional mental
   /// Make API request with retry logic
   Future<String> _makeRequestWithRetry(String userMessage, List<Message> conversationHistory) async {
     int attempt = 0;
-    Exception? lastException;
 
     while (attempt < AppConfig.maxRetryAttempts) {
       try {
         return await _makeApiRequest(userMessage, conversationHistory);
-      } on http.ClientException catch (e) {
-        lastException = e;
+      } on http.ClientException {
         attempt++;
         if (attempt < AppConfig.maxRetryAttempts) {
           // Wait before retry with exponential backoff
           await Future.delayed(Duration(milliseconds: 500 * attempt));
         }
-      } on FormatException catch (e) {
+      } on FormatException {
         // Don't retry on parsing errors
         return _getErrorMessage('Invalid response format from AI service');
       } catch (e) {
-        lastException = e as Exception;
         attempt++;
         if (attempt < AppConfig.maxRetryAttempts) {
           await Future.delayed(Duration(milliseconds: 500 * attempt));

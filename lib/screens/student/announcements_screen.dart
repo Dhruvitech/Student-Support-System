@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:studentsupportsystem/providers/announcement_provider.dart';
 import 'package:studentsupportsystem/widgets/custom_card.dart';
-import 'package:studentsupportsystem/widgets/loading_indicator.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   const AnnouncementsScreen({super.key});

@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/lost_and_found_model.dart';
 import '../../services/lost_and_found_service.dart';
+import 'dart:typed_data';
 
 class LostAndFoundAdminScreen extends StatefulWidget {
   const LostAndFoundAdminScreen({super.key});
@@ -203,20 +204,8 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                       if (isOwner && !isResolved)
                         Row(
                           children: [
-                            if (item.status != 'lost')
-                              TextButton(
-                                onPressed: () =>
-                                    _service.updateStatus(item.id, 'lost'),
-                                child: const Text('Mark Lost',
-                                    style: TextStyle(color: Colors.red)),
-                              ),
-                            if (item.status != 'found')
-                              TextButton(
-                                onPressed: () =>
-                                    _service.updateStatus(item.id, 'found'),
-                                child: const Text('Mark Found',
-                                    style: TextStyle(color: Colors.green)),
-                              ),
+                            
+                           
                             TextButton(
                               onPressed: () =>
                                   _service.updateStatus(item.id, 'resolved'),
@@ -305,6 +294,7 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
     String selectedStatus = 'lost';
     String selectedCategory = 'Electronics';
     XFile? pickedImage;
+    Uint8List? pickedImageBytes;
     bool isUploading = false;
 
     showModalBottomSheet(
@@ -389,12 +379,16 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                               onTap: () async {
                                 Navigator.pop(ctx);
                                 final img = await picker.pickImage(
-                                  source: ImageSource.camera,
-                                  imageQuality: 70,
+                                source: ImageSource.camera,
+                                imageQuality: 70,
                                 );
                                 if (img != null) {
-                                  setModalState(() => pickedImage = img);
-                                }
+                                final bytes = await img.readAsBytes();
+                                setModalState(() {
+                                pickedImage = img;
+                                pickedImageBytes = bytes;
+                                 });
+                               }
                               },
                             ),
                             ListTile(
@@ -402,13 +396,17 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                               title: const Text('Choose from Gallery'),
                               onTap: () async {
                                 Navigator.pop(ctx);
-                                final img = await picker.pickImage(
-                                  source: ImageSource.gallery,
-                                  imageQuality: 70,
-                                );
-                                if (img != null) {
-                                  setModalState(() => pickedImage = img);
-                                }
+                               final img = await picker.pickImage(
+  source: ImageSource.gallery,
+  imageQuality: 70,
+);
+if (img != null) {
+  final bytes = await img.readAsBytes();
+  setModalState(() {
+    pickedImage = img;
+    pickedImageBytes = bytes;
+  });
+}
                               },
                             ),
                           ],
@@ -418,20 +416,20 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                   },
                   child: Container(
                     width: double.infinity,
-                    height: pickedImage != null ? 160 : 80,
+                    height: pickedImageBytes != null ? 160 : 80,
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey.shade400),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.grey.shade50,
                     ),
-                    child: pickedImage != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              File(pickedImage!.path),
-                              fit: BoxFit.cover,
-                            ),
-                          )
+                   child: pickedImageBytes != null
+                   ? ClipRRect(
+                   borderRadius: BorderRadius.circular(12),
+                   child: Image.memory(
+                   pickedImageBytes!,
+                   fit: BoxFit.cover,
+                   ),
+                     )
                         : const Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -503,15 +501,14 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                             try {
                               // ── Upload photo if selected ──
                               String imageUrl = '';
-                              if (pickedImage != null) {
-                                final ref = FirebaseStorage.instance
-                                    .ref()
-                                    .child('lost_and_found')
-                                    .child(
-                                        '${DateTime.now().millisecondsSinceEpoch}.jpg');
-                                await ref.putFile(File(pickedImage!.path));
-                                imageUrl = await ref.getDownloadURL();
-                              }
+                            if (pickedImage != null && pickedImageBytes != null) {
+  final ref = FirebaseStorage.instance
+      .ref()
+      .child('lost_and_found')
+      .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+  await ref.putData(pickedImageBytes!);  // ← putData works on web
+  imageUrl = await ref.getDownloadURL();
+}
 
                               // ── Save to Firestore ──
                               await FirebaseFirestore.instance

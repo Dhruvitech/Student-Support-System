@@ -1,5 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/lost_and_found_model.dart';
 import '../../services/lost_and_found_service.dart';
 
@@ -14,6 +18,8 @@ class LostAndFoundAdminScreen extends StatefulWidget {
 class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
   final LostAndFoundService _service = LostAndFoundService();
   String _filter = 'all';
+  final String _currentUserId =
+      FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +67,9 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
+              final bool isOwner = item.userId == _currentUserId;
+              final bool isResolved = item.status == 'resolved';
+
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(
@@ -71,7 +80,8 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title + Status Badge
+
+                      // ── Title + Status Badge ──
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -111,11 +121,42 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Description
+                      // ── Photo ──
+                      if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            item.imageUrl!,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return Container(
+                                height: 180,
+                                color: Colors.grey.shade100,
+                                child: const Center(
+                                    child: CircularProgressIndicator()),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                              height: 60,
+                              color: Colors.grey.shade100,
+                              child: const Center(
+                                  child: Icon(Icons.broken_image,
+                                      color: Colors.grey)),
+                            ),
+                          ),
+                        ),
+                      if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                        const SizedBox(height: 8),
+
+                      // ── Description ──
                       Text(item.description),
                       const SizedBox(height: 8),
 
-                      // Location + Category
+                      // ── Location + Category ──
                       Row(
                         children: [
                           const Icon(Icons.location_on, size: 16),
@@ -129,19 +170,19 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                       ),
                       const SizedBox(height: 4),
 
-                      // Posted by + Date
+                      // ── Posted by + Date ──
                       Text(
                         'Posted by: ${item.postedBy} • ${item.date}',
                         style: theme.textTheme.bodySmall,
                       ),
                       const SizedBox(height: 4),
 
-                      // ✅ Contact Number
+                      // ── Contact Number ──
                       if (item.contactNumber.isNotEmpty)
                         Row(
                           children: [
-                            const Icon(Icons.phone, size: 16,
-                                color: Colors.teal),
+                            const Icon(Icons.phone,
+                                size: 16, color: Colors.teal),
                             const SizedBox(width: 4),
                             Text(
                               'Contact: ${item.contactNumber}',
@@ -155,32 +196,52 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
 
                       const SizedBox(height: 12),
 
-                      // Action Buttons — ✅ "Mark Found" removed
-                      Row(
-                        children: [
-                          if (item.status != 'lost')
-                            TextButton(
-                              onPressed: () =>
-                                  _service.updateStatus(item.id, 'lost'),
-                              child: const Text('Mark Lost',
-                                  style: TextStyle(color: Colors.red)),
-                            ),
-                          // ❌ "Mark Found" button removed
-                          if (item.status != 'resolved')
+                      // ── Action Buttons ──
+                      // ✅ Only the person who posted can resolve/delete
+                      // ✅ Resolved items show no action buttons
+                      if (isOwner && !isResolved)
+                        Row(
+                          children: [
+                            
                             TextButton(
                               onPressed: () =>
                                   _service.updateStatus(item.id, 'resolved'),
                               child: const Text('Resolve',
                                   style: TextStyle(color: Colors.blue)),
                             ),
-                          const Spacer(),
-                          IconButton(
-                            onPressed: () =>
-                                _showDeleteDialog(context, item.id),
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                          ),
-                        ],
-                      ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () =>
+                                  _showDeleteDialog(context, item.id),
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.red),
+                            ),
+                          ],
+                        ),
+
+                      // ✅ Resolved: only label + delete
+                      if (isOwner && isResolved)
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle,
+                                color: Colors.blue, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Marked as resolved',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () =>
+                                  _showDeleteDialog(context, item.id),
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.red),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -208,8 +269,8 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
               await _service.deleteItem(itemId);
               Navigator.pop(context);
             },
-            child:
-                const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete',
+                style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -220,9 +281,12 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
     final titleController = TextEditingController();
     final descController = TextEditingController();
     final locationController = TextEditingController();
-    final contactController = TextEditingController(); // ✅ NEW
+    final contactController = TextEditingController();
     String selectedStatus = 'lost';
     String selectedCategory = 'Electronics';
+    XFile? pickedImage;
+    Uint8List? pickedImageBytes;
+    bool isUploading = false;
 
     showModalBottomSheet(
       context: context,
@@ -275,8 +339,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
-                // ✅ Contact Number Field
                 TextField(
                   controller: contactController,
                   keyboardType: TextInputType.phone,
@@ -284,6 +346,87 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                     labelText: 'Contact Number',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.phone),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ── Photo Picker ──
+                GestureDetector(
+                  onTap: () async {
+                    final picker = ImagePicker();
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (ctx) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.camera_alt),
+                              title: const Text('Take a Photo'),
+                              onTap: () async {
+                                Navigator.pop(ctx);
+                                final img = await picker.pickImage(
+                                  source: ImageSource.camera,
+                                  imageQuality: 70,
+                                );
+                                if (img != null) {
+                                  final bytes = await img.readAsBytes();
+                                  setModalState(() {
+                                    pickedImage = img;
+                                    pickedImageBytes = bytes;
+                                  });
+                                }
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.photo_library),
+                              title: const Text('Choose from Gallery'),
+                              onTap: () async {
+                                Navigator.pop(ctx);
+                                final img = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  imageQuality: 70,
+                                );
+                                if (img != null) {
+                                  final bytes = await img.readAsBytes();
+                                  setModalState(() {
+                                    pickedImage = img;
+                                    pickedImageBytes = bytes;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: pickedImageBytes != null ? 160 : 80,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade400),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey.shade50,
+                    ),
+                    child: pickedImageBytes != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.memory(
+                              pickedImageBytes!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo,
+                                  color: Colors.grey, size: 28),
+                              SizedBox(height: 6),
+                              Text('Add Photo (optional)',
+                                  style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -333,42 +476,82 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () async {
-                      if (titleController.text.isEmpty) return;
-                      try {
-                        await FirebaseFirestore.instance
-                            .collection('lost_and_found')
-                            .add({
-                          'title': titleController.text,
-                          'description': descController.text,
-                          'category': selectedCategory,
-                          'status': selectedStatus,
-                          'location': locationController.text,
-                          'date':
-                              DateTime.now().toString().split(' ')[0],
-                          'postedBy': 'Admin',
-                          'userId': 'admin',
-                          'contactNumber': contactController.text, // ✅ NEW
-                          'createdAt': FieldValue.serverTimestamp(),
-                        });
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✅ Item added successfully!'),
-                          ),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')),
-                        );
-                      }
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Text('Add Item'),
+                    onPressed: isUploading
+                        ? null
+                        : () async {
+                            if (titleController.text.isEmpty) return;
+                            setModalState(() => isUploading = true);
+                            try {
+                              String imageUrl = '';
+                              if (pickedImage != null &&
+                                  pickedImageBytes != null) {
+                                final ref = FirebaseStorage.instance
+                                    .ref()
+                                    .child('lost_and_found')
+                                    .child(
+                                        '${DateTime.now().millisecondsSinceEpoch}.jpg');
+                                await ref.putData(pickedImageBytes!);
+                                imageUrl = await ref.getDownloadURL();
+                              }
+
+                              await FirebaseFirestore.instance
+                                  .collection('lost_and_found')
+                                  .add({
+                                'title': titleController.text,
+                                'description': descController.text,
+                                'category': selectedCategory,
+                                'status': selectedStatus,
+                                'location': locationController.text,
+                                'date': DateTime.now()
+                                    .toString()
+                                    .split(' ')[0],
+                                'postedBy': FirebaseAuth.instance
+                                        .currentUser?.displayName ??
+                                    'Admin',
+                                'userId':
+                                    FirebaseAuth.instance.currentUser?.uid ??
+                                        '',
+                                'contactNumber': contactController.text,
+                                'imageUrl': imageUrl,
+                                'createdAt': FieldValue.serverTimestamp(),
+                              });
+
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('✅ Item added successfully!'),
+                                ),
+                              );
+                            } catch (e) {
+                              setModalState(() => isUploading = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
+                          },
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: isUploading
+                          ? const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white),
+                                ),
+                                SizedBox(width: 10),
+                                Text('Uploading...'),
+                              ],
+                            )
+                          : const Text('Add Item'),
                     ),
                   ),
                 ),
