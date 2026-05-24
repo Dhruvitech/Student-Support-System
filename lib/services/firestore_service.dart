@@ -613,45 +613,50 @@ class FirestoreService {
           return list;
         });
   }
+// ================= ASSIGNMENTS =================
 
-  // ================= ASSIGNMENTS =================
+Stream<QuerySnapshot<Map<String, dynamic>>> getAssignments() {
+  return _firestore
+      .collection('assignments')
+      .orderBy('createdAt', descending: true)
+      .snapshots();
+}
 
-  Future<void> addAssignment({
-    required String title,
-    required String description,
-    required String fileUrl,
-    required DateTime deadline,
-  }) async {
-    await _firestore.collection('assignments').add({
-      'title': title,
-      'description': description,
-      'fileUrl': fileUrl,
-      'deadline': Timestamp.fromDate(deadline),
-      'createdAt': Timestamp.now(),
-    });
+Future<void> submitAssignment({
+  required String assignmentId,
+  required String studentId,
+  required String fileUrl,
+  required String fileName,
+}) async {
+  if (assignmentId.trim().isEmpty) {
+    throw Exception("Assignment ID is empty");
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getAssignments() {
-    return _firestore.collection('assignments')
-    .orderBy('createdAt', descending: true)
-    .snapshots();
+  if (studentId.trim().isEmpty) {
+    throw Exception("Student ID is empty");
   }
 
-  Future<void> submitAssignment({
-    required String assignmentId,
-    required String studentId,
-    required String fileUrl,
-  }) async {
-    await _firestore.collection('submissions').add({
-      'assignmentId': assignmentId,
-      'studentId': studentId,
-      'fileUrl': fileUrl,
-      'submittedAt': Timestamp.now(),
-    });
+  if (fileUrl.trim().isEmpty) {
+    throw Exception("File URL is empty");
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> checkSubmission(
-    String assignmentId, String studentId) {
+  if (fileName.trim().isEmpty) {
+    throw Exception("File name is empty");
+  }
+
+  await _firestore.collection('submissions').add({
+    'assignmentId': assignmentId,
+    'studentId': studentId,
+    'fileUrl': fileUrl,
+    'fileName': fileName,
+    'submittedAt': Timestamp.now(),
+  });
+}
+
+Stream<QuerySnapshot<Map<String, dynamic>>> checkSubmission(
+  String assignmentId,
+  String studentId,
+) {
   return _firestore
       .collection('submissions')
       .where('assignmentId', isEqualTo: assignmentId)
@@ -659,24 +664,20 @@ class FirestoreService {
       .snapshots();
 }
 
- Stream<QuerySnapshot<Map<String, dynamic>>> getSubmissions(String assignmentId) {
-  return _firestore
+Stream<QuerySnapshot<Map<String, dynamic>>> getSubmissions(String assignmentId) {
+  return FirebaseFirestore.instance
       .collection('submissions')
       .where('assignmentId', isEqualTo: assignmentId)
       .snapshots();
 }
 
-  // Get file data by document ID
-  Future<Map<String, dynamic>?> getFileData(String fileId) async {
-    try {
-      final doc = await _firestore.collection('files').doc(fileId).get();
-      if (doc.exists) {
-        return doc.data();
-      }
-      return null;
-    } catch (e) {
-      print("Error fetching file data: $e");
-      return null;
-    }
+Future<Map<String, dynamic>?> getFileData(String fileId) async {
+  try {
+    final doc = await _firestore.collection('files').doc(fileId).get();
+    return doc.exists ? doc.data() : null;
+  } catch (e) {
+    print("Error fetching file data: $e");
+    return null;
   }
+}
 }

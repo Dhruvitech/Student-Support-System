@@ -41,13 +41,16 @@ class CreateAssignmentScreen extends StatelessWidget {
                 margin: const EdgeInsets.all(10),
                 child: ListTile(
                   title: Text(data['title'] ?? ""),
-                  subtitle: Text("Deadline: ${deadline.day}/${deadline.month}/${deadline.year}"),
+                  subtitle: Text(
+                    "Deadline: ${deadline.day}/${deadline.month}/${deadline.year}",
+                  ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ViewSubmissionsScreen(assignmentId: doc.id),
+                        builder: (_) =>
+                            ViewSubmissionsScreen(assignmentId: doc.id),
                       ),
                     );
                   },
@@ -61,7 +64,9 @@ class CreateAssignmentScreen extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const UploadAssignmentFormScreen()),
+            MaterialPageRoute(
+              builder: (_) => const UploadAssignmentFormScreen(),
+            ),
           );
         },
         child: const Icon(Icons.add),
@@ -70,15 +75,16 @@ class CreateAssignmentScreen extends StatelessWidget {
     );
   }
 }
-
 class UploadAssignmentFormScreen extends StatefulWidget {
   const UploadAssignmentFormScreen({super.key});
 
   @override
-  State<UploadAssignmentFormScreen> createState() => _UploadAssignmentFormScreenState();
+  State<UploadAssignmentFormScreen> createState() =>
+      _UploadAssignmentFormScreenState();
 }
 
-class _UploadAssignmentFormScreenState extends State<UploadAssignmentFormScreen> {
+class _UploadAssignmentFormScreenState
+    extends State<UploadAssignmentFormScreen> {
   final titleController = TextEditingController();
   final descController = TextEditingController();
 
@@ -91,13 +97,13 @@ class _UploadAssignmentFormScreenState extends State<UploadAssignmentFormScreen>
 
   Future pickFile() async {
     try {
-      FilePickerResult? result = await FilePicker.pickFiles(
-        withData: true,
-        allowMultiple: false,
-      );
+      FilePickerResult? result =
+          await FilePicker.platform.pickFiles(withData: true);
+
       if (result != null && result.files.isNotEmpty) {
         setState(() {
           fileName = result.files.single.name;
+
           if (kIsWeb) {
             webFile = result.files.single.bytes;
             file = null;
@@ -108,7 +114,11 @@ class _UploadAssignmentFormScreenState extends State<UploadAssignmentFormScreen>
         });
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
   }
 
@@ -119,17 +129,27 @@ class _UploadAssignmentFormScreenState extends State<UploadAssignmentFormScreen>
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
-    if (picked != null) setState(() => deadline = picked);
+
+    if (picked != null) {
+      setState(() => deadline = picked);
+    }
   }
 
   Future upload() async {
-    if (titleController.text.isEmpty || descController.text.isEmpty || deadline == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fill all fields")));
+    if (titleController.text.isEmpty ||
+        descController.text.isEmpty ||
+        deadline == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Fill all fields")),
+      );
       return;
     }
+
     setState(() => loading = true);
+
     try {
       String fileUrl = "no_file";
+
       if (file != null || webFile != null) {
         fileUrl = await StorageService().uploadFileFlexible(
           file: file,
@@ -137,18 +157,29 @@ class _UploadAssignmentFormScreenState extends State<UploadAssignmentFormScreen>
           path: 'assignments/${DateTime.now().millisecondsSinceEpoch}',
         );
       }
-      await FirestoreService().addAssignment(
-        title: titleController.text,
-        description: descController.text,
-        fileUrl: fileUrl,
-        deadline: deadline!,
-      );
+
+      // ✅ FIXED: correct function
+   await FirebaseFirestore.instance.collection('assignments').add({
+  'title': titleController.text.trim(),
+  'description': descController.text.trim(),
+  'fileUrl': fileUrl,
+  'fileName': fileName?.trim().isNotEmpty == true ? fileName : 'no_file',
+  'deadline': Timestamp.fromDate(deadline!),
+  'createdAt': Timestamp.now(),
+});
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Uploaded ✅")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Uploaded ✅")),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -163,18 +194,42 @@ class _UploadAssignmentFormScreenState extends State<UploadAssignmentFormScreen>
         child: SingleChildScrollView(
           child: Column(
             children: [
-              TextField(controller: titleController, decoration: const InputDecoration(labelText: "Title")),
-              TextField(controller: descController, decoration: const InputDecoration(labelText: "Description")),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: "Title"),
+              ),
+              TextField(
+                controller: descController,
+                decoration: const InputDecoration(labelText: "Description"),
+              ),
               const SizedBox(height: 10),
-              ElevatedButton(onPressed: pickFile, child: const Text("Pick File")),
-              if (fileName != null) Text("Selected: $fileName ✅"),
+
+              ElevatedButton(
+                onPressed: pickFile,
+                child: const Text("Pick File"),
+              ),
+
+              if (fileName != null) Text("Selected: $fileName"),
+
               const SizedBox(height: 10),
-              ElevatedButton(onPressed: pickDate, child: const Text("Select Deadline")),
-              if (deadline != null) Text("Deadline: ${deadline!.day}/${deadline!.month}/${deadline!.year}"),
+
+              ElevatedButton(
+                onPressed: pickDate,
+                child: const Text("Select Deadline"),
+              ),
+
+              if (deadline != null)
+                Text(
+                  "Deadline: ${deadline!.day}/${deadline!.month}/${deadline!.year}",
+                ),
+
               const SizedBox(height: 20),
+
               ElevatedButton(
                 onPressed: loading ? null : upload,
-                child: loading ? const CircularProgressIndicator() : const Text("Upload Assignment"),
+                child: loading
+                    ? const CircularProgressIndicator()
+                    : const Text("Upload Assignment"),
               ),
             ],
           ),

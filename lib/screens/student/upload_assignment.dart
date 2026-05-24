@@ -4,12 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:studentsupportsystem/services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:studentsupportsystem/services/storage_service.dart';
 
 class UploadAssignmentScreen extends StatefulWidget {
   final String assignmentId;
-  const UploadAssignmentScreen({super.key, this.assignmentId = ''});
+
+  const UploadAssignmentScreen({
+    super.key,
+    required this.assignmentId,
+  });
 
   @override
   State<UploadAssignmentScreen> createState() =>
@@ -20,18 +24,21 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
   File? file;
   Uint8List? webFile;
   bool loading = false;
-  String? fileName;
+
+  String fileName = '';
 
   // ================= PICK FILE =================
   Future pickFile() async {
     try {
-      FilePickerResult? result = await FilePicker.pickFiles(
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
         withData: true,
         allowMultiple: false,
       );
+
       if (result != null && result.files.isNotEmpty) {
         setState(() {
           fileName = result.files.single.name;
+
           if (kIsWeb) {
             webFile = result.files.single.bytes;
             file = null;
@@ -42,17 +49,15 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
         });
       }
     } catch (e) {
-      print('Error picking file: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("File pick error: $e")),
-        );
-      }
+      debugPrint('Error picking file: $e');
     }
   }
 
   // ================= UPLOAD =================
-  Future upload() async {
+  Future<void> upload() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    // ❌ no file selected
     if (file == null && webFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please pick a file first")),
@@ -60,20 +65,40 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
       return;
     }
 
+    // ❌ user not logged in
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User not logged in")),
+      );
+      return;
+    }
+
+    // ❌ invalid assignment id
+    if (widget.assignmentId.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid assignment ID")),
+      );
+      return;
+    }
+
     setState(() => loading = true);
 
     try {
+      // upload file to storage
       String url = await StorageService().uploadFileFlexible(
         file: file,
         webFile: webFile,
         path: 'submissions/${DateTime.now().millisecondsSinceEpoch}',
       );
 
-      await FirestoreService().submitAssignment(
-        assignmentId: widget.assignmentId,
-        studentId: FirebaseAuth.instance.currentUser?.uid ?? '',
-        fileUrl: url,
-      );
+      // save submission in firestore
+      await FirebaseFirestore.instance.collection('submissions').add({
+        'assignmentId': widget.assignmentId,
+        'studentId': user.uid,
+        'fileUrl': url,
+        'fileName': fileName.isNotEmpty ? fileName : 'no_file',
+        'submittedAt': Timestamp.now(),
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +107,8 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      print("Upload error: $e");
+      debugPrint("Upload error: $e");
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: $e")),
@@ -106,12 +132,15 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
               onPressed: pickFile,
               child: const Text("Pick File"),
             ),
-            if (fileName != null)
+
+            if (fileName.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text("Selected: $fileName ✅"),
               ),
+
             const SizedBox(height: 20),
+
             ElevatedButton(
               onPressed: loading ? null : upload,
               child: loading
