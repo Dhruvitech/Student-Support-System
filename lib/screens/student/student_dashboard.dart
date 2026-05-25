@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:studentsupportsystem/providers/auth_provider.dart';
+import 'package:studentsupportsystem/providers/theme_provider.dart';
 import 'package:studentsupportsystem/screens/student/announcements_screen.dart';
 import 'package:studentsupportsystem/screens/student/complaint_screen.dart';
 import 'package:studentsupportsystem/screens/student/class_schedule_screen.dart';
@@ -96,6 +97,16 @@ class StudentDashboard extends StatelessWidget {
                           ),
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: Icon(
+                        context.watch<ThemeProvider>().themeMode == ThemeMode.dark
+                            ? Icons.light_mode
+                            : Icons.dark_mode,
+                      ),
+                      onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+                      tooltip: 'Toggle theme',
                     ),
                   ],
                 ),

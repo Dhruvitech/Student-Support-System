@@ -23,6 +23,7 @@ class AuthService {
     required String name,
     required String role,
     String classGroup = '',
+    String enrollmentNumber = '',
   }) async {
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -36,8 +37,8 @@ class AuthService {
       email: email,
       role: role,
       classGroup: classGroup,
-      enrollmentNumber: '',
-      password: '',
+      enrollmentNumber: enrollmentNumber,
+      password: password,
       createdAt: now,
       updatedAt: now,
     );
@@ -78,6 +79,34 @@ class AuthService {
       }
       rethrow;
     }
+  }
+
+  Future<UserModel> signInWithEmailOrEnrollment({
+    required String emailOrEnrollment,
+    required String password,
+  }) async {
+    final input = emailOrEnrollment.trim();
+    if (input.contains('@')) {
+      return signInWithEmailAndPassword(email: input, password: password);
+    }
+    
+    final query = await _firestore
+        .collection('users')
+        .where('enrollmentNumber', isEqualTo: input)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      throw Exception('No student found with this enrollment number.');
+    }
+
+    final data = query.docs.first.data();
+    if ((data['password'] as String? ?? '') == password) {
+      return UserModel.fromJson(data);
+    }
+    
+    final email = data['email'] as String;
+    return signInWithEmailAndPassword(email: email, password: password);
   }
 
   Future<void> signOut() async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:studentsupportsystem/providers/auth_provider.dart';
+import 'package:studentsupportsystem/providers/theme_provider.dart';
 import 'package:studentsupportsystem/screens/auth/login_screen.dart';
 import 'package:studentsupportsystem/widgets/custom_button.dart';
 
@@ -153,6 +154,81 @@ class ProfileScreen extends StatelessWidget {
                           label: 'Role',
                           value: user?.role == 'admin' ? 'Administrator' : 'Student',
                           gradientColors: [theme.colorScheme.tertiary, const Color(0xFFF97316)],
+                        ),
+                        const SizedBox(height: 32),
+                        Text(
+                          'App Settings',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Colors.amber, Colors.orange],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  context.watch<ThemeProvider>().themeMode == ThemeMode.dark
+                                      ? Icons.dark_mode
+                                      : Icons.light_mode,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Theme Mode',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      context.watch<ThemeProvider>().themeMode == ThemeMode.dark
+                                          ? 'Dark Mode'
+                                          : 'Light Mode',
+                                      style: theme.textTheme.bodyLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: context.watch<ThemeProvider>().themeMode == ThemeMode.dark,
+                                onChanged: (value) => context.read<ThemeProvider>().toggleTheme(),
+                                activeThumbColor: theme.colorScheme.primary,
+                                activeTrackColor: theme.colorScheme.primary.withValues(alpha: 0.5),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 32),
                         Container(

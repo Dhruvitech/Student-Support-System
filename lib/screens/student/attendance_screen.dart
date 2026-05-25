@@ -4,8 +4,15 @@ import 'package:studentsupportsystem/models/attendance_model.dart';
 import 'package:studentsupportsystem/providers/auth_provider.dart';
 import 'package:studentsupportsystem/services/firestore_service.dart';
 
-class AttendanceScreen extends StatelessWidget {
+class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
+
+  @override
+  State<AttendanceScreen> createState() => _AttendanceScreenState();
+}
+
+class _AttendanceScreenState extends State<AttendanceScreen> {
+  String? _selectedSubject;
 
   @override
   Widget build(BuildContext context) {
@@ -21,47 +28,95 @@ class AttendanceScreen extends StatelessWidget {
           ? Center(
               child: Text('Please sign in to view attendance.', style: theme.textTheme.titleMedium),
             )
-          : StreamBuilder<List<AttendanceModel>>(
-              stream: firestoreService.getAttendanceForStudent(user.uid),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+          : StreamBuilder<List<String>>(
+              stream: firestoreService.getSubjectsStreamForClass(user.classGroup),
+              builder: (context, subjectSnapshot) {
+                if (subjectSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final attendanceRecords = snapshot.data ?? [];
-                if (attendanceRecords.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No attendance data available yet. Ask your faculty to mark attendance for your class.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-                    ),
-                  );
-                }
+                final subjects = subjectSnapshot.data ?? ['General Subject'];
+                final activeSubject = subjects.contains(_selectedSubject) ? _selectedSubject! : subjects.first;
 
-                final totalLectures = attendanceRecords.length;
-                final totalPresent = attendanceRecords.where((record) => record.present).length;
-                final overallPercentage = totalLectures == 0 ? 0 : ((totalPresent / totalLectures) * 100).round();
+                return StreamBuilder<List<AttendanceModel>>(
+                  stream: firestoreService.getAttendanceRecordsForClassAndSubject(user.classGroup, activeSubject),
+                  builder: (context, attendanceSnapshot) {
+                    if (attendanceSnapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                final bySubject = <String, List<AttendanceModel>>{};
-                for (final record in attendanceRecords) {
-                  bySubject.putIfAbsent(record.subject, () => []).add(record);
-                }
+                    final attendanceRecords = attendanceSnapshot.data ?? [];
+                    
+                    // Extract unique lecture dates
+                    final lectureDates = attendanceRecords
+                        .map((r) => r.date.toIso8601String().split('T').first)
+                        .toSet();
+                    final total = lectureDates.length;
 
-                return ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    _buildSummaryCard(context, theme, totalLectures, totalPresent, overallPercentage),
-                    const SizedBox(height: 20),
-                    ...bySubject.entries.map((entry) => _buildSubjectCard(context, theme, entry.key, entry.value)),
-                  ],
+                    // Match daily records for the current student
+                    final List<AttendanceModel> studentDailyRecords = [];
+                    final sortedDates = lectureDates.toList()..sort((a, b) => b.compareTo(a));
+
+                    for (final dateStr in sortedDates) {
+                      final recordOnDate = attendanceRecords.firstWhere(
+                        (r) => (r.studentId == user.uid || r.studentName == user.name) && 
+                               r.date.toIso8601String().startsWith(dateStr),
+                        orElse: () => AttendanceModel(
+                          id: 'missing_${user.uid}_${dateStr}',
+                          studentId: user.uid,
+                          studentName: user.name,
+                          classGroup: user.classGroup,
+                          subject: activeSubject,
+                          date: DateTime.parse(dateStr),
+                          present: false, // Default to absent if missing
+                        ),
+                      );
+                      studentDailyRecords.add(recordOnDate);
+                    }
+
+                    final present = studentDailyRecords.where((r) => r.present).length;
+                    final percent = total == 0 ? 0 : ((present / total) * 100).round();
+
+                    return ListView(
+                      padding: const EdgeInsets.all(24),
+                      children: [
+                        Text('Select Subject', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                          ),
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            underline: const SizedBox.shrink(),
+                            value: activeSubject,
+                            items: subjects
+                                .map((subject) => DropdownMenuItem(value: subject, child: Text(subject)))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedSubject = value;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildSubjectSummaryCard(context, theme, activeSubject, present, total, percent),
+                        const SizedBox(height: 12),
+                        _buildAttendanceDetails(context, theme, studentDailyRecords),
+                      ],
+                    );
+                  },
                 );
               },
             ),
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, ThemeData theme, int totalLectures, int totalPresent, int overallPercentage) {
+  Widget _buildSubjectSummaryCard(BuildContext context, ThemeData theme, String subject, int present, int total, int percent) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -78,98 +133,126 @@ class AttendanceScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Overall Attendance', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          Text(subject, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          Text('$overallPercentage%', style: theme.textTheme.headlineLarge?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text('$totalPresent of $totalLectures lectures present', style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 16),
-          LinearProgressIndicator(value: overallPercentage / 100),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubjectCard(BuildContext context, ThemeData theme, String subject, List<AttendanceModel> records) {
-    final total = records.length;
-    final present = records.where((item) => item.present).length;
-    final percent = total == 0 ? 0 : (present / total * 100).round();
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 0,
-      color: theme.colorScheme.surface,
-      clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(subject, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('$percent% attendance', style: theme.textTheme.bodyMedium),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
-          child: Row(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: percent / 100,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
+              Text('$percent% Attendance', style: theme.textTheme.headlineMedium?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$present / $total Lectures',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Text('$present / $total', style: theme.textTheme.bodySmall),
             ],
           ),
-        ),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: records.map((record) {
-                final dateLabel = '${record.date.year}-${record.date.month.toString().padLeft(2, '0')}-${record.date.day.toString().padLeft(2, '0')}';
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: record.present ? theme.colorScheme.primary : theme.colorScheme.error,
-                        child: Icon(record.present ? Icons.check : Icons.close, color: Colors.white, size: 16),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(dateLabel, style: theme.textTheme.bodyMedium),
-                      ),
-                      Text(record.present ? 'Present' : 'Absent', style: theme.textTheme.bodyMedium?.copyWith(color: record.present ? theme.colorScheme.primary : theme.colorScheme.error)),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          )
+          const SizedBox(height: 16),
+          LinearProgressIndicator(
+            value: percent / 100,
+            borderRadius: BorderRadius.circular(4),
+            minHeight: 8,
+          ),
         ],
       ),
     );
   }
 
+  Widget _buildAttendanceDetails(BuildContext context, ThemeData theme, List<AttendanceModel> records) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            children: [
+              Icon(Icons.calendar_month, color: theme.colorScheme.primary, size: 20),
+              const SizedBox(width: 8),
+              Text('Attendance Log', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        if (records.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'No logs for this subject.',
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+            ),
+          )
+        else
+          ...records.map((record) {
+            final dateLabel = '${record.date.year}-${record.date.month.toString().padLeft(2, '0')}-${record.date.day.toString().padLeft(2, '0')}';
+            final statusColor = record.present ? theme.colorScheme.primary : theme.colorScheme.error;
+            final statusBg = record.present 
+                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.15) 
+                : theme.colorScheme.errorContainer.withValues(alpha: 0.15);
 
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.05)),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: statusBg,
+                    child: Icon(
+                      record.present ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                      color: statusColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(dateLabel, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(
+                          record.present ? 'Attended' : 'Missed',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      record.present ? 'Present' : 'Absent',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+      ],
+    );
+  }
 }

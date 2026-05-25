@@ -15,23 +15,37 @@ class AttendanceReportScreen extends StatefulWidget {
 class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   String? _selectedSubject;
-
-  static const Map<String, List<String>> classSubjects = {
-    'IT Sem-6 Div A': ['Advanced Web Development', 'Artificial Intelligence', 'Software Engineering', 'Data Analysis and Visualization'],
-    'IT Sem-6 Div B': ['Advanced Web Development', 'Artificial Intelligence', 'Software Engineering', 'Data Analysis and Visualization'],
-  };
+  List<String> _subjects = [];
+  bool _isLoadingSubjects = true;
 
   @override
   void initState() {
     super.initState();
-    final subjects = classSubjects[widget.classGroup] ?? [];
-    _selectedSubject = subjects.isNotEmpty ? subjects.first : null;
+    _loadSubjects();
+  }
+
+  Future<void> _loadSubjects() async {
+    var subjects = await _firestoreService.getSubjectsForClass(widget.classGroup);
+
+    if (subjects.isEmpty) {
+      subjects = ['General Subject'];
+      await _firestoreService.addSubjectToClass(widget.classGroup, subjects.first);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _subjects = subjects;
+      _selectedSubject = _subjects.first;
+      _isLoadingSubjects = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subjects = classSubjects[widget.classGroup] ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -50,21 +64,26 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
                 const SizedBox(height: 20),
                 Text('Subject', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                if (_isLoadingSubjects)
+                  const SizedBox(height: 58, child: Center(child: CircularProgressIndicator()))
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.1)),
+                    ),
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      underline: const SizedBox.shrink(),
+                      value: _selectedSubject,
+                      items: _subjects
+                          .map((subject) => DropdownMenuItem(value: subject, child: Text(subject)))
+                          .toList(),
+                      onChanged: (value) => setState(() => _selectedSubject = value),
+                    ),
                   ),
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    underline: const SizedBox.shrink(),
-                    value: _selectedSubject,
-                    items: subjects.map((subject) => DropdownMenuItem(value: subject, child: Text(subject))).toList(),
-                    onChanged: (value) => setState(() => _selectedSubject = value),
-                  ),
-                ),
               ],
             ),
           ),
@@ -76,7 +95,8 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final students = studentSnapshot.data ?? [];
+                final students = List<UserModel>.from(studentSnapshot.data ?? [])
+                  ..sort((a, b) => a.enrollmentNumber.compareTo(b.enrollmentNumber));
                 if (students.isEmpty) {
                   return Center(
                     child: Text(
@@ -155,7 +175,7 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
                                   children: [
                                     Text(student.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                                     const SizedBox(height: 4),
-                                    Text(student.email, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+                                    Text(student.enrollmentNumber, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [

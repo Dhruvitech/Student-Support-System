@@ -165,347 +165,271 @@ class FirestoreService {
         });
   }
 
-  Future<void> seedDemoStudentUsers() async {
+  Future<void> initializeActualStudents() async {
+    final usersCollection = _firestore.collection('users');
+    final existingStudentsQuery = await usersCollection.where('role', isEqualTo: 'student').get();
+    
+    final batch = _firestore.batch();
+    for (final doc in existingStudentsQuery.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+
     final now = DateTime.now();
-    final demoStudents = [
-      // Sem 6
-      UserModel(
-        uid: 'it-semi6-a-1',
-        name: 'Ayesha Khan',
-        email: 'ayesha.khan@itsem6a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div A',
-        enrollmentNumber: '230280116001',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-a-2',
-        name: 'Rahul Patel',
-        email: 'rahul.patel@itsem6a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div A',
-        enrollmentNumber: '230280116002',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-a-3',
-        name: 'Meera Sen',
-        email: 'meera.sen@itsem6a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div A',
-        enrollmentNumber: '230280116003',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-a-4',
-        name: 'Arjun Nair',
-        email: 'arjun.nair@itsem6a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div A',
-        enrollmentNumber: '230280116004',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-a-5',
-        name: 'Simran Gupta',
-        email: 'simran.gupta@itsem6a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div A',
-        enrollmentNumber: '230280116005',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-b-1',
-        name: 'Sana Ali',
-        email: 'sana.ali@itsem6b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div B',
-        enrollmentNumber: '230280116006',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-b-2',
-        name: 'Vijay Sharma',
-        email: 'vijay.sharma@itsem6b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div B',
-        enrollmentNumber: '230280116007',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-b-3',
-        name: 'Tanvi Desai',
-        email: 'tanvi.desai@itsem6b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div B',
-        enrollmentNumber: '230280116008',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-b-4',
-        name: 'Karan Singh',
-        email: 'karan.singh@itsem6b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div B',
-        enrollmentNumber: '230280116009',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-semi6-b-5',
-        name: 'Neha Verma',
-        email: 'neha.verma@itsem6b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-6 Div B',
-        enrollmentNumber: '230280116010',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      // Sem 4
-      UserModel(
-        uid: 'it-sem4-a-1',
-        name: 'Rohit Mehta',
-        email: 'rohit.mehta@itsem4a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div A',
-        enrollmentNumber: '240280116001',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-a-2',
-        name: 'Nidhi Joshi',
-        email: 'nidhi.joshi@itsem4a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div A',
-        enrollmentNumber: '240280116002',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-a-3',
-        name: 'Pranav Iyer',
-        email: 'pranav.iyer@itsem4a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div A',
-        enrollmentNumber: '240280116003',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-a-4',
-        name: 'Riya Shah',
-        email: 'riya.shah@itsem4a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div A',
-        enrollmentNumber: '240280116004',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-a-5',
-        name: 'Amit Joshi',
-        email: 'amit.joshi@itsem4a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div A',
-        enrollmentNumber: '240280116005',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-b-1',
-        name: 'Pooja Singh',
-        email: 'pooja.singh@itsem4b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div B',
-        enrollmentNumber: '240280116006',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-b-2',
-        name: 'Vikas Rao',
-        email: 'vikas.rao@itsem4b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div B',
-        enrollmentNumber: '240280116007',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-b-3',
-        name: 'Sheetal Patel',
-        email: 'sheetal.patel@itsem4b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div B',
-        enrollmentNumber: '240280116008',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-b-4',
-        name: 'Devansh Kumar',
-        email: 'devansh.kumar@itsem4b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div B',
-        enrollmentNumber: '240280116009',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem4-b-5',
-        name: 'Anjali Mathur',
-        email: 'anjali.mathur@itsem4b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-4 Div B',
-        enrollmentNumber: '240280116010',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      // Sem 2
-      UserModel(
-        uid: 'it-sem2-a-1',
-        name: 'Kavya Menon',
-        email: 'kavya.menon@itsem2a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div A',
-        enrollmentNumber: '250280116001',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-a-2',
-        name: 'Sameer Khan',
-        email: 'sameer.khan@itsem2a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div A',
-        enrollmentNumber: '250280116002',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-a-3',
-        name: 'Isha Verma',
-        email: 'isha.verma@itsem2a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div A',
-        enrollmentNumber: '250280116003',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-a-4',
-        name: 'Harish Gupta',
-        email: 'harish.gupta@itsem2a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div A',
-        enrollmentNumber: '250280116004',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-a-5',
-        name: 'Rhea Nair',
-        email: 'rhea.nair@itsem2a.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div A',
-        enrollmentNumber: '250280116005',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-b-1',
-        name: 'Ankit Sharma',
-        email: 'ankit.sharma@itsem2b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div B',
-        enrollmentNumber: '250280116006',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-b-2',
-        name: 'Priya Joshi',
-        email: 'priya.joshi@itsem2b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div B',
-        enrollmentNumber: '250280116007',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-b-3',
-        name: 'Naveen Patel',
-        email: 'naveen.patel@itsem2b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div B',
-        enrollmentNumber: '250280116008',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-b-4',
-        name: 'Smita Rao',
-        email: 'smita.rao@itsem2b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div B',
-        enrollmentNumber: '250280116009',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      UserModel(
-        uid: 'it-sem2-b-5',
-        name: 'Aman Verma',
-        email: 'aman.verma@itsem2b.edu',
-        role: 'student',
-        classGroup: 'IT Sem-2 Div B',
-        enrollmentNumber: '250280116010',
-        password: '123456',
-        createdAt: now,
-        updatedAt: now,
-      ),
+    final List<UserModel> actualStudents = [];
+
+    // Sem 6 Div A (30 students)
+    final sem6DivANames = [
+      'Aaditya Joshi', 'Aarav Patel', 'Abhishek Sharma', 'Aditi Mehta', 'Alok Mishra',
+      'Amit Trivedi', 'Ananya Sen', 'Aniket Kumar', 'Anjali Verma', 'Ankit Dwivedi',
+      'Anshul Gupta', 'Anushka Shah', 'Archana Nair', 'Arjun Rao', 'Ayesha Khan',
+      'Bhavin Patel', 'Deepa Iyer', 'Devansh Rajput', 'Divya Saxena', 'Gaurav Chaudhari',
+      'Harish Solanki', 'Isha Bhatia', 'Jayesh Panchal', 'Kavya Pillai', 'Keni Patel',
+      'Kunal Deshmukh', 'Manisha Gokhale', 'Manoj Kulkarni', 'Mayur Chawla', 'Meera Sen'
     ];
 
-    for (final student in demoStudents) {
-      await createStudent(student);
+    for (int i = 0; i < sem6DivANames.length; i++) {
+      final name = sem6DivANames[i];
+      final enrollment = '230280116${(i + 1).toString().padLeft(3, '0')}';
+      final email = '${name.toLowerCase().replaceAll(' ', '.')}@itsem6a.edu';
+      actualStudents.add(UserModel(
+        uid: 'it_sem6_a_${i + 1}',
+        name: name,
+        email: email,
+        role: 'student',
+        classGroup: 'IT Sem-6 Div A',
+        enrollmentNumber: enrollment,
+        password: '123456',
+        createdAt: now,
+        updatedAt: now,
+      ));
     }
+
+    // Sem 6 Div B (30 students)
+    final sem6DivBNames = [
+      'Neha Verma', 'Nidhi Joshi', 'Nikhil Pandey', 'Nimesh Vyas', 'Pooja Singh',
+      'Pranav Iyer', 'Pratik Bhatt', 'Priyanka Das', 'Rahul Patel', 'Rhea Nair',
+      'Rohit Mehta', 'Rohan Deshmukh', 'Sameer Khan', 'Sana Ali', 'Sandeep Yadav',
+      'Sanjay Chauhan', 'Savitri Gamit', 'Shweta Thakur', 'Siddharth Roy', 'Simran Gupta',
+      'Sneha Reddy', 'Sunil Shetty', 'Tanvi Desai', 'Tarun Saxena', 'Uday Kirpal',
+      'Varun Dhawan', 'Vijay Sharma', 'Vikas Rao', 'Vikram Malhotra', 'Yashwardhan Birla'
+    ];
+
+    for (int i = 0; i < sem6DivBNames.length; i++) {
+      final name = sem6DivBNames[i];
+      final enrollment = '230280116${(i + 31).toString().padLeft(3, '0')}';
+      final email = '${name.toLowerCase().replaceAll(' ', '.')}@itsem6b.edu';
+      actualStudents.add(UserModel(
+        uid: 'it_sem6_b_${i + 1}',
+        name: name,
+        email: email,
+        role: 'student',
+        classGroup: 'IT Sem-6 Div B',
+        enrollmentNumber: enrollment,
+        password: '123456',
+        createdAt: now,
+        updatedAt: now,
+      ));
+    }
+
+    // Sem 4 Div A (15 students)
+    final sem4DivANames = [
+      'Abhay Charan', 'Aman Varma', 'Anita Desai', 'Brijesh Solanki', 'Chirag Shah',
+      'Deepak Malhotra', 'Ekta Kapoor', 'Farhan Akhtar', 'Gopal Krishna', 'Hema Malini',
+      'Inder Kumar', 'Jyoti Basu', 'Kiran Kher', 'Lalit Modi', 'Madhuri Dixit'
+    ];
+
+    for (int i = 0; i < sem4DivANames.length; i++) {
+      final name = sem4DivANames[i];
+      final enrollment = '240280116${(i + 1).toString().padLeft(3, '0')}';
+      final email = '${name.toLowerCase().replaceAll(' ', '.')}@itsem4a.edu';
+      actualStudents.add(UserModel(
+        uid: 'it_sem4_a_${i + 1}',
+        name: name,
+        email: email,
+        role: 'student',
+        classGroup: 'IT Sem-4 Div A',
+        enrollmentNumber: enrollment,
+        password: '123456',
+        createdAt: now,
+        updatedAt: now,
+      ));
+    }
+
+    // Sem 4 Div B (15 students)
+    final sem4DivBNames = [
+      'Naveen Patnaik', 'Omprakash Valmiki', 'Padmini Kolhapure', 'Rajesh Khanna', 'Rekha Ganesan',
+      'Salman Khan', 'Sheetal Patel', 'Shashi Kapoor', 'Sunil Gavaskar', 'Tabu Hashmi',
+      'Udit Narayan', 'Vinod Khanna', 'Waheeda Rehman', 'Yash Chopra', 'Zoya Akhtar'
+    ];
+
+    for (int i = 0; i < sem4DivBNames.length; i++) {
+      final name = sem4DivBNames[i];
+      final enrollment = '240280116${(i + 16).toString().padLeft(3, '0')}';
+      final email = '${name.toLowerCase().replaceAll(' ', '.')}@itsem4b.edu';
+      actualStudents.add(UserModel(
+        uid: 'it_sem4_b_${i + 1}',
+        name: name,
+        email: email,
+        role: 'student',
+        classGroup: 'IT Sem-4 Div B',
+        enrollmentNumber: enrollment,
+        password: '123456',
+        createdAt: now,
+        updatedAt: now,
+      ));
+    }
+
+    // Write all of them to Firestore in batches
+    final List<List<UserModel>> chunks = [];
+    int chunkSize = 25; // 25 is safe for Batch set writes
+    for (var i = 0; i < actualStudents.length; i += chunkSize) {
+      chunks.add(actualStudents.sublist(i, i + chunkSize > actualStudents.length ? actualStudents.length : i + chunkSize));
+    }
+
+    for (final chunk in chunks) {
+      final writeBatch = _firestore.batch();
+      for (final student in chunk) {
+        writeBatch.set(usersCollection.doc(student.uid), student.toJson());
+      }
+      await writeBatch.commit();
+    }
+  }
+
+  Future<void> ensureDefaultClassGroups() async {
+    final defaultSubjects = [
+      'Advanced Web Development',
+      'Artificial Intelligence',
+      'Software Engineering',
+      'Data Analysis and Visualization',
+    ];
+
+    await createClassGroup(
+      branch: 'IT',
+      semester: 6,
+      division: 'A',
+      subjects: List<String>.from(defaultSubjects),
+    );
+    await createClassGroup(
+      branch: 'IT',
+      semester: 6,
+      division: 'B',
+      subjects: List<String>.from(defaultSubjects),
+    );
+    await createClassGroup(
+      branch: 'IT',
+      semester: 4,
+      division: 'A',
+      subjects: List<String>.from(defaultSubjects),
+    );
+    await createClassGroup(
+      branch: 'IT',
+      semester: 4,
+      division: 'B',
+      subjects: List<String>.from(defaultSubjects),
+    );
+
+    await initializeActualStudents();
+  }
+
+  Stream<List<String>> getClassGroups() {
+    return _firestore
+        .collection('class_groups')
+        .orderBy('displayName')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => (doc.data()['displayName'] as String?) ?? '')
+            .where((name) => name.isNotEmpty)
+            .toList());
+  }
+
+  Future<void> createClassGroup({
+    required String branch,
+    required int semester,
+    required String division,
+    List<String>? subjects,
+  }) async {
+    final normalizedBranch = branch.trim().toUpperCase();
+    final normalizedDivision = division.trim().toUpperCase();
+
+    if (normalizedBranch.isEmpty || normalizedDivision.isEmpty) {
+      throw Exception('Branch and division are required');
+    }
+
+    final displayName = '$normalizedBranch Sem-$semester Div $normalizedDivision';
+    final docRef = _firestore.collection('class_groups').doc(displayName);
+    final docSnap = await docRef.get();
+
+    final Map<String, dynamic> classData = {
+      'branch': normalizedBranch,
+      'semester': semester,
+      'division': normalizedDivision,
+      'displayName': displayName,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (!docSnap.exists) {
+      classData['subjects'] = (subjects ?? ['General Subject'])
+          .map((subject) => subject.trim())
+          .where((subject) => subject.isNotEmpty)
+          .toList();
+      classData['createdAt'] = FieldValue.serverTimestamp();
+    } else if (subjects != null) {
+      classData['subjects'] = subjects
+          .map((subject) => subject.trim())
+          .where((subject) => subject.isNotEmpty)
+          .toList();
+    }
+
+    await docRef.set(classData, SetOptions(merge: true));
+  }
+
+  Future<List<String>> getSubjectsForClass(String classGroup) async {
+    final doc = await _firestore.collection('class_groups').doc(classGroup).get();
+    if (!doc.exists || doc.data() == null) {
+      return [];
+    }
+
+    final subjects = doc.data()?['subjects'];
+    if (subjects is List) {
+      return subjects
+          .map((subject) => subject.toString().trim())
+          .where((subject) => subject.isNotEmpty)
+          .toList();
+    }
+
+    return [];
+  }
+
+  Stream<List<String>> getSubjectsStreamForClass(String classGroup) {
+    return _firestore
+        .collection('class_groups')
+        .doc(classGroup)
+        .snapshots()
+        .map((doc) {
+          if (!doc.exists || doc.data() == null) return ['General Subject'];
+          final subjects = doc.data()?['subjects'];
+          if (subjects is List) {
+            final list = subjects
+                .map((subject) => subject.toString().trim())
+                .where((subject) => subject.isNotEmpty)
+                .toList();
+            return list.isEmpty ? ['General Subject'] : list;
+          }
+          return ['General Subject'];
+        });
+  }
+
+  Future<void> addSubjectToClass(String classGroup, String subject) async {
+    final trimmedSubject = subject.trim();
+    if (trimmedSubject.isEmpty) {
+      return;
+    }
+
+    await _firestore.collection('class_groups').doc(classGroup).set({
+      'subjects': FieldValue.arrayUnion([trimmedSubject]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<void> migrateOldClassNames() async {

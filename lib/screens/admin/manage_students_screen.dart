@@ -12,17 +12,7 @@ class ManageStudentsScreen extends StatefulWidget {
 
 class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  bool _dummySeeded = false;
 
-  Future<void> _seedDummyStudents() async {
-    await _firestoreService.seedDemoStudentUsers();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Demo students added to database with password 123456.')),
-      );
-    }
-  }
 
   void _showDeleteConfirmation(UserModel student) {
     showDialog(
@@ -66,13 +56,7 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
           icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download_for_offline),
-            onPressed: _seedDummyStudents,
-            tooltip: 'Seed dummy students',
-          ),
-        ],
+
       ),
       body: StreamBuilder<List<UserModel>>(
         stream: _firestoreService.getStudents(),
@@ -82,12 +66,6 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            if (!_dummySeeded) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _seedDummyStudents();
-                _dummySeeded = true;
-              });
-            }
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -103,12 +81,6 @@ class _ManageStudentsScreenState extends State<ManageStudentsScreen> {
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Seeding demo students now. Refresh after a few seconds.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                   ),
                 ],
               ),

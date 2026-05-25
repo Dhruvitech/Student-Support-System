@@ -37,6 +37,7 @@ class AuthProvider extends ChangeNotifier {
     required String name,
     required String role,
     String classGroup = '',
+    String enrollmentNumber = '',
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -48,6 +49,7 @@ class AuthProvider extends ChangeNotifier {
         name: name,
         role: role,
         classGroup: classGroup,
+        enrollmentNumber: enrollmentNumber,
       );
     } finally {
       _isLoading = false;
@@ -56,15 +58,15 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signIn({
-    required String email,
+    required String emailOrEnrollment,
     required String password,
   }) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      _currentUser = await _authService.signInWithEmailAndPassword(
-        email: email,
+      _currentUser = await _authService.signInWithEmailOrEnrollment(
+        emailOrEnrollment: emailOrEnrollment,
         password: password,
       );
     } finally {

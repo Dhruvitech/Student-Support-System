@@ -78,8 +78,10 @@ class ViewSubmissionsScreen extends StatelessWidget {
                       ),
 
                       trailing: IconButton(
-                        icon: const Icon(Icons.download_rounded
-                         color: Colors.blue.shade900, // dark blue),
+                        icon: Icon(
+                          Icons.download_rounded,
+                          color: Colors.blue.shade900,
+                        ),
                         tooltip: 'View/Download Assignment',
                         onPressed: () async {
   final bytes = await StorageService().getFileBytes(fileUrl);

@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final authProvider = context.read<AuthProvider>();
       await authProvider.signIn(
-        email: _emailController.text.trim(),
+        emailOrEnrollment: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
@@ -101,16 +101,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 40),
                 CustomTextField(
                   controller: _emailController,
-                  label: 'Email',
-                  hint: 'Enter your email',
+                  label: 'Email or Enrollment Number',
+                  hint: 'Enter your email or enrollment number',
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: Icon(Icons.email_outlined, color: theme.colorScheme.primary),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Please enter your email or enrollment number';
                     }
-                    if (!value.contains('@')) {
-                      return 'Please enter a valid email';
+                    if (!value.contains('@') && value.trim().length < 10) {
+                      return 'Please enter a valid email or enrollment number';
                     }
                     return null;
                   },

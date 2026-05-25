@@ -100,17 +100,6 @@ class AdminDashboard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(Icons.sync),
-                      onPressed: () {
-                        FirestoreService().migrateEnrollmentNumbers();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Migrating enrollment numbers...')),
-                        );
-                      },
-                      tooltip: 'Migrate Enrollments',
-                    ),
                     IconButton(
                       icon: Icon(
                         context.watch<ThemeProvider>().themeMode == ThemeMode.dark
