@@ -5,18 +5,56 @@ import 'package:studentsupportsystem/services/firestore_service.dart';
 import 'upload_assignment.dart';
 import '../file_viewer_screen.dart';
 
-class AssignmentListScreen extends StatelessWidget {
+class AssignmentListScreen extends StatefulWidget {
+  const AssignmentListScreen({super.key});
+
+  @override
+  State<AssignmentListScreen> createState() => _AssignmentListScreenState();
+}
+
+class _AssignmentListScreenState extends State<AssignmentListScreen> {
   final FirestoreService firestoreService = FirestoreService();
+  Map<String, dynamic>? studentData;
+  bool loadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStudentData();
+  }
+
+  Future<void> _loadStudentData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    setState(() {
+      studentData = doc.data();
+      loadingUser = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
     final userId = currentUser?.uid ?? '';
 
+    if (loadingUser) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final branch = studentData?['branch'] ?? '';
+    final semester = studentData?['semester'] ?? '';
+    final division = studentData?['division'] ?? '';
+
     return Scaffold(
-      appBar: AppBar(title: const Text("View Assignments")), // FIXED TITLE
+      appBar: AppBar(title: const Text("View Assignments")),
       body: StreamBuilder<QuerySnapshot>(
-        stream: firestoreService.getAssignments(),
+        stream: firestoreService.getStudentAssignments(
+          branch: branch,
+          semester: semester,
+          division: division,
+        ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -39,14 +77,14 @@ class AssignmentListScreen extends StatelessWidget {
               var data = doc.data() as Map<String, dynamic>;
 
               Timestamp? deadlineStamp = data['deadline'] as Timestamp?;
-              DateTime deadline = deadlineStamp != null 
-                  ? deadlineStamp.toDate() 
-                  : DateTime.now().add(const Duration(days: 1)); // Default to future if null
+              DateTime deadline = deadlineStamp != null
+                  ? deadlineStamp.toDate()
+                  : DateTime.now().add(const Duration(days: 1));
 
               bool isLate = DateTime.now().isAfter(deadline);
 
               return Card(
-                margin: const EdgeInsets.all(10),
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
                   title: Text(data['title'] ?? ""),
                   subtitle: Column(
@@ -71,7 +109,6 @@ class AssignmentListScreen extends StatelessWidget {
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           onPressed: () {
-                            // Navigate to file viewer instead of trying to launch URL
                             Navigator.push(
                               context,
                               MaterialPageRoute(

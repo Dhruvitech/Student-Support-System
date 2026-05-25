@@ -1,31 +1,46 @@
 import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+
 import '../../services/firestore_service.dart';
 import '../../services/storage_service.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:studentsupportsystem/screens/admin/view_submissions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateAssignmentScreen extends StatelessWidget {
+  CreateAssignmentScreen({super.key});
+
   final FirestoreService firestoreService = FirestoreService();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Assignments")),
+
       body: StreamBuilder<QuerySnapshot>(
-        stream: firestoreService.getAssignments(),
+        stream: firestoreService.getTeacherAssignments(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
+
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(
+              child: Text("Error: ${snapshot.error}"),
+            );
           }
+
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No assignments found"));
+            return const Center(
+              child: Text("No assignments found"),
+            );
           }
 
           var docs = snapshot.data!.docs;
@@ -34,23 +49,58 @@ class CreateAssignmentScreen extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               var doc = docs[index];
+
               var data = doc.data() as Map<String, dynamic>;
-              DateTime deadline = (data['deadline'] as Timestamp).toDate();
+
+              DateTime deadline =
+                  (data['deadline'] as Timestamp).toDate();
 
               return Card(
                 margin: const EdgeInsets.all(10),
+
                 child: ListTile(
                   title: Text(data['title'] ?? ""),
-                  subtitle: Text(
-                    "Deadline: ${deadline.day}/${deadline.month}/${deadline.year}",
+
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Deadline: ${deadline.day}/${deadline.month}/${deadline.year}",
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        "Faculty: ${data['facultyName'] ?? ''}",
+                      ),
+
+                      Text(
+                        "Subject: ${data['subject'] ?? ''}",
+                      ),
+
+                      Text(
+                        "Branch: ${data['branch'] ?? ''}",
+                      ),
+
+                      Text(
+                        "Semester: ${data['semester'] ?? ''}",
+                      ),
+
+                      Text(
+                        "Division: ${data['division'] ?? ''}",
+                      ),
+                    ],
                   ),
+
                   trailing: const Icon(Icons.chevron_right),
+
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            ViewSubmissionsScreen(assignmentId: doc.id),
+                        builder: (_) => ViewSubmissionsScreen(
+                          assignmentId: doc.id,
+                        ),
                       ),
                     );
                   },
@@ -60,21 +110,26 @@ class CreateAssignmentScreen extends StatelessWidget {
           );
         },
       ),
+
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Create New Assignment',
+
+        child: const Icon(Icons.add),
+
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const UploadAssignmentFormScreen(),
+              builder: (_) =>
+                  const UploadAssignmentFormScreen(),
             ),
           );
         },
-        child: const Icon(Icons.add),
-        tooltip: 'Create New Assignment',
       ),
     );
   }
 }
+
 class UploadAssignmentFormScreen extends StatefulWidget {
   const UploadAssignmentFormScreen({super.key});
 
@@ -86,19 +141,75 @@ class UploadAssignmentFormScreen extends StatefulWidget {
 class _UploadAssignmentFormScreenState
     extends State<UploadAssignmentFormScreen> {
   final titleController = TextEditingController();
+
   final descController = TextEditingController();
 
   File? file;
+
   Uint8List? webFile;
+
   String? fileName;
 
   DateTime? deadline;
+
   bool loading = false;
+
+  // ================= FILTER VARIABLES =================
+
+  String? selectedFaculty;
+
+  String? selectedSubject;
+
+  String? selectedBranch;
+
+  String? selectedSemester;
+
+  String? selectedDivision;
+
+  // ================= DROPDOWN LISTS =================
+
+  final List<String> faculties = [
+    'Prof. Shah',
+    'Prof. Patel',
+    'Prof. Mehta',
+  ];
+
+  final List<String> subjects = [
+    'Flutter',
+    'Java',
+    'Python',
+    'DBMS',
+  ];
+
+  final List<String> branches = [
+    'IT',
+    'CE',
+    'EC',
+  ];
+
+  final List<String> semesters = [
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+  ];
+
+  final List<String> divisions = [
+    'A',
+    'B',
+  ];
+
+  // ================= PICK FILE =================
 
   Future pickFile() async {
     try {
+      
       FilePickerResult? result =
-          await FilePicker.platform.pickFiles(withData: true);
+          await FilePicker.platform.pickFiles(
+        withData: true,
+      );
 
       if (result != null && result.files.isNotEmpty) {
         setState(() {
@@ -116,17 +227,24 @@ class _UploadAssignmentFormScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(
+            content: Text("Error: $e"),
+          ),
         );
       }
     }
   }
 
+  // ================= PICK DATE =================
+
   Future pickDate() async {
     final picked = await showDatePicker(
       context: context,
+
       initialDate: DateTime.now(),
+
       firstDate: DateTime.now(),
+
       lastDate: DateTime(2030),
     );
 
@@ -135,12 +253,21 @@ class _UploadAssignmentFormScreenState
     }
   }
 
+  // ================= UPLOAD =================
+
   Future upload() async {
     if (titleController.text.isEmpty ||
         descController.text.isEmpty ||
-        deadline == null) {
+        deadline == null ||
+        selectedFaculty == null ||
+        selectedSubject == null ||
+        selectedBranch == null ||
+        selectedSemester == null ||
+        selectedDivision == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Fill all fields")),
+        const SnackBar(
+          content: Text("Fill all fields"),
+        ),
       );
       return;
     }
@@ -151,82 +278,267 @@ class _UploadAssignmentFormScreenState
       String fileUrl = "no_file";
 
       if (file != null || webFile != null) {
-        fileUrl = await StorageService().uploadFileFlexible(
+        fileUrl =
+            await StorageService().uploadFileFlexible(
           file: file,
           webFile: webFile,
-          path: 'assignments/${DateTime.now().millisecondsSinceEpoch}',
+          path:
+              'assignments/${DateTime.now().millisecondsSinceEpoch}',
         );
       }
 
-      // ✅ FIXED: correct function
-   await FirebaseFirestore.instance.collection('assignments').add({
-  'title': titleController.text.trim(),
-  'description': descController.text.trim(),
-  'fileUrl': fileUrl,
-  'fileName': fileName?.trim().isNotEmpty == true ? fileName : 'no_file',
-  'deadline': Timestamp.fromDate(deadline!),
-  'createdAt': Timestamp.now(),
-});
+      await FirebaseFirestore.instance
+          .collection('assignments')
+          .add({
+        'title': titleController.text.trim(),
+
+        'description': descController.text.trim(),
+
+        'facultyName': selectedFaculty,
+
+        'subject': selectedSubject,
+
+        'branch': selectedBranch,
+
+        'semester': selectedSemester,
+
+        'division': selectedDivision,
+
+        'fileUrl': fileUrl,
+
+        'fileName':
+            fileName?.trim().isNotEmpty == true
+                ? fileName
+                : 'no_file',
+
+        'deadline': Timestamp.fromDate(deadline!),
+
+        'createdAt': Timestamp.now(),
+
+        'uploadedBy': FirebaseAuth.instance.currentUser!.uid,
+
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Uploaded ✅")),
+          const SnackBar(
+            content: Text("Uploaded ✅"),
+          ),
         );
+
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(
+            content: Text("Error: $e"),
+          ),
         );
       }
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
+
+  // ================= UI =================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Create Assignment")),
+      appBar: AppBar(
+        title: const Text("Create Assignment"),
+      ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
+
         child: SingleChildScrollView(
           child: Column(
             children: [
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(labelText: "Title"),
+
+                decoration: const InputDecoration(
+                  labelText: "Title",
+                  border: OutlineInputBorder(),
+                ),
               ),
+
+              const SizedBox(height: 10),
+
               TextField(
                 controller: descController,
-                decoration: const InputDecoration(labelText: "Description"),
+
+                maxLines: 3,
+
+                decoration: const InputDecoration(
+                  labelText: "Description",
+                  border: OutlineInputBorder(),
+                ),
               ),
+
               const SizedBox(height: 10),
+
+              DropdownButtonFormField<String>(
+                value: selectedFaculty,
+
+                decoration: const InputDecoration(
+                  labelText: "Faculty Name",
+                  border: OutlineInputBorder(),
+                ),
+
+                items: faculties.map((e) {
+                  return DropdownMenuItem(
+                    value: e,
+                    child: Text(e),
+                  );
+                }).toList(),
+
+                onChanged: (value) {
+                  setState(() {
+                    selectedFaculty = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              DropdownButtonFormField<String>(
+                value: selectedSubject,
+
+                decoration: const InputDecoration(
+                  labelText: "Subject",
+                  border: OutlineInputBorder(),
+                ),
+
+                items: subjects.map((e) {
+                  return DropdownMenuItem(
+                    value: e,
+                    child: Text(e),
+                  );
+                }).toList(),
+
+                onChanged: (value) {
+                  setState(() {
+                    selectedSubject = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              DropdownButtonFormField<String>(
+                value: selectedBranch,
+
+                decoration: const InputDecoration(
+                  labelText: "Branch",
+                  border: OutlineInputBorder(),
+                ),
+
+                items: branches.map((e) {
+                  return DropdownMenuItem(
+                    value: e,
+                    child: Text(e),
+                  );
+                }).toList(),
+
+                onChanged: (value) {
+                  setState(() {
+                    selectedBranch = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              DropdownButtonFormField<String>(
+                value: selectedSemester,
+
+                decoration: const InputDecoration(
+                  labelText: "Semester",
+                  border: OutlineInputBorder(),
+                ),
+
+                items: semesters.map((e) {
+                  return DropdownMenuItem(
+                    value: e,
+                    child: Text("Semester $e"),
+                  );
+                }).toList(),
+
+                onChanged: (value) {
+                  setState(() {
+                    selectedSemester = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              DropdownButtonFormField<String>(
+                value: selectedDivision,
+
+                decoration: const InputDecoration(
+                  labelText: "Division",
+                  border: OutlineInputBorder(),
+                ),
+
+                items: divisions.map((e) {
+                  return DropdownMenuItem(
+                    value: e,
+                    child: Text(e),
+                  );
+                }).toList(),
+
+                onChanged: (value) {
+                  setState(() {
+                    selectedDivision = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 15),
 
               ElevatedButton(
                 onPressed: pickFile,
+
                 child: const Text("Pick File"),
               ),
 
-              if (fileName != null) Text("Selected: $fileName"),
+              if (fileName != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
 
-              const SizedBox(height: 10),
+                  child: Text(
+                    "Selected: $fileName",
+                  ),
+                ),
+
+              const SizedBox(height: 15),
 
               ElevatedButton(
                 onPressed: pickDate,
+
                 child: const Text("Select Deadline"),
               ),
 
               if (deadline != null)
-                Text(
-                  "Deadline: ${deadline!.day}/${deadline!.month}/${deadline!.year}",
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+
+                  child: Text(
+                    "Deadline: ${deadline!.day}/${deadline!.month}/${deadline!.year}",
+                  ),
                 ),
 
               const SizedBox(height: 20),
 
               ElevatedButton(
                 onPressed: loading ? null : upload,
+
                 child: loading
                     ? const CircularProgressIndicator()
                     : const Text("Upload Assignment"),

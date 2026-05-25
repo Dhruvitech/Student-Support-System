@@ -4,6 +4,7 @@ import 'package:studentsupportsystem/models/attendance_model.dart';
 import 'package:studentsupportsystem/models/complaint_model.dart';
 import 'package:studentsupportsystem/models/schedule_model.dart';
 import 'package:studentsupportsystem/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -539,9 +540,26 @@ class FirestoreService {
   }
 // ================= ASSIGNMENTS =================
 
-Stream<QuerySnapshot<Map<String, dynamic>>> getAssignments() {
+
+Stream<QuerySnapshot<Map<String, dynamic>>> getTeacherAssignments() {
+  final currentUser = FirebaseAuth.instance.currentUser;
   return _firestore
       .collection('assignments')
+      .where('uploadedBy', isEqualTo: currentUser!.uid)
+      .orderBy('createdAt', descending: true)
+      .snapshots();
+}
+
+Stream<QuerySnapshot<Map<String, dynamic>>> getStudentAssignments({
+  required String branch,
+  required String semester,
+  required String division,
+}) {
+  return _firestore
+      .collection('assignments')
+      .where('branch', isEqualTo: branch)
+      .where('semester', isEqualTo: semester)
+      .where('division', isEqualTo: division)
       .orderBy('createdAt', descending: true)
       .snapshots();
 }
