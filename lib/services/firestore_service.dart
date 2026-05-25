@@ -543,10 +543,12 @@ class FirestoreService {
 
 Stream<QuerySnapshot<Map<String, dynamic>>> getTeacherAssignments() {
   final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) {
+    return const Stream.empty();
+  }
   return _firestore
       .collection('assignments')
-      .where('uploadedBy', isEqualTo: currentUser!.uid)
-      .orderBy('createdAt', descending: true)
+      .where('uploadedBy', isEqualTo: currentUser.uid)
       .snapshots();
 }
 
@@ -560,7 +562,6 @@ Stream<QuerySnapshot<Map<String, dynamic>>> getStudentAssignments({
       .where('branch', isEqualTo: branch)
       .where('semester', isEqualTo: semester)
       .where('division', isEqualTo: division)
-      .orderBy('createdAt', descending: true)
       .snapshots();
 }
 

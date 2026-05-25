@@ -347,7 +347,7 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
                 ),
               ),
 
-              // ─── Student Grid ───
+              // ─── Student List ───
               if (students.isEmpty)
                 Expanded(
                   child: Center(
@@ -359,19 +359,18 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
                 )
               else
                 Expanded(
-                  child: GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 0.83,
-                    ),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
                     itemCount: students.length,
+                    separatorBuilder: (context, index) => Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.15),
+                    ),
                     itemBuilder: (context, index) {
                       final student = students[index];
                       final isPresent = _attendanceMap[student.uid] ?? false;
-                      return _buildCompactStudentCard(theme, student, isPresent);
+                      return _buildStudentRow(theme, student, isPresent);
                     },
                   ),
                 ),
@@ -409,108 +408,73 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
     );
   }
 
-  Widget _buildCompactStudentCard(ThemeData theme, UserModel student, bool isPresent) {
-    final firstName = student.name.split(' ').first;
-    final initials = student.name
-        .split(' ')
-        .take(2)
-        .map((w) => w.isNotEmpty ? w[0].toUpperCase() : '')
-        .join('');
-    final enrollSuffix = student.enrollmentNumber.length > 5
-        ? student.enrollmentNumber.substring(student.enrollmentNumber.length - 5)
-        : student.enrollmentNumber;
-
-    return GestureDetector(
+  Widget _buildStudentRow(ThemeData theme, UserModel student, bool isPresent) {
+    return InkWell(
       onTap: () => setState(() => _attendanceMap[student.uid] = !isPresent),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: isPresent
-              ? theme.colorScheme.primary.withValues(alpha: 0.08)
-              : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isPresent ? theme.colorScheme.primary : theme.colorScheme.outline.withValues(alpha: 0.2),
-            width: isPresent ? 2 : 1,
-          ),
-          boxShadow: isPresent
-              ? [BoxShadow(color: theme.colorScheme.primary.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 2))]
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.bottomRight,
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: isPresent ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
-                  child: Text(
-                    initials,
-                    style: TextStyle(
-                      color: isPresent ? Colors.white : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                if (isPresent)
-                  Positioned(
-                    right: -2,
-                    bottom: -2,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 10),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                firstName,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                  color: isPresent ? theme.colorScheme.primary : theme.colorScheme.onSurface,
-                ),
-              ),
-            ),
-            Text(
-              '…$enrollSuffix',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                fontSize: 9,
-              ),
-            ),
-            const SizedBox(height: 4),
+            // Status Circle / Icon
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isPresent
+                    ? Colors.green.withValues(alpha: 0.12)
+                    : theme.colorScheme.error.withValues(alpha: 0.08),
+                border: Border.all(
+                  color: isPresent ? Colors.green : theme.colorScheme.error.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                isPresent ? Icons.check : Icons.close,
+                color: isPresent ? Colors.green : theme.colorScheme.error,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Enrollment + Student Name
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    student.enrollmentNumber,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    student.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isPresent ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Present/Absent badge
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isPresent
-                    ? Colors.green.withValues(alpha: 0.15)
-                    : theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(20),
+                    ? Colors.green
+                    : theme.colorScheme.errorContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
                 isPresent ? 'Present' : 'Absent',
-                style: TextStyle(
-                  fontSize: 9,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: isPresent ? Colors.white : theme.colorScheme.error,
                   fontWeight: FontWeight.bold,
-                  color: isPresent ? Colors.green.shade700 : theme.colorScheme.error,
                 ),
               ),
             ),
