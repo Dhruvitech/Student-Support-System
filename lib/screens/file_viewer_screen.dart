@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:open_file/open_file.dart';
 import '../services/storage_service.dart';
+import '../utils/web_downloader.dart';
 
 class FileViewerScreen extends StatefulWidget {
   final String fileId;
@@ -34,6 +36,19 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     setState(() => _isDownloading = true);
 
     try {
+      if (kIsWeb) {
+        downloadFileWeb(fileBytes, widget.fileName);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Downloading file...'),
+            ),
+          );
+        }
+        return;
+      }
+
       final tempDir = Directory.systemTemp;
 
       final safeName =

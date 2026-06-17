@@ -3,8 +3,9 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:studentsupportsystem/providers/auth_provider.dart';
 import 'package:studentsupportsystem/services/storage_service.dart';
 
 class UploadAssignmentScreen extends StatefulWidget {
@@ -55,7 +56,7 @@ class _UploadAssignmentScreenState extends State<UploadAssignmentScreen> {
 
   // ================= UPLOAD =================
   Future<void> upload() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = context.read<AuthProvider>().currentUser;
 
     // ❌ no file selected
     if (file == null && webFile == null) {

@@ -16,18 +16,20 @@ class ViewSubmissionsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text("Submissions")),
 
-      body: StreamBuilder(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: FirestoreService().getSubmissions(assignmentId),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          var docs = snapshot.data!.docs;
-
-          if (docs.isEmpty) {
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(child: Text("No submissions yet"));
           }
+
+          final docs = snapshot.data!.docs;
 
           return ListView.builder(
             itemCount: docs.length,
