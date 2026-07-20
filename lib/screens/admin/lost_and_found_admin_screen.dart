@@ -123,7 +123,7 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                       const SizedBox(height: 8),
 
                       // ── Photo ──
-                   if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                    if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
   ClipRRect(
     borderRadius: BorderRadius.circular(10),
     child: ConstrainedBox(
@@ -203,13 +203,6 @@ class _LostAndFoundAdminScreenState extends State<LostAndFoundAdminScreen> {
                       if (isOwner && !isResolved)
                         Row(
                           children: [
-                            if (item.status != 'found')
-                              TextButton(
-                                onPressed: () =>
-                                    _service.updateStatus(item.id, 'found'),
-                                child: const Text('Mark Found',
-                                    style: TextStyle(color: Colors.green)),
-                              ),
                             TextButton(
                               onPressed: () =>
                                   _service.updateStatus(item.id, 'resolved'),

@@ -16,8 +16,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.studentsupportsystem"
-    compileSdk = 35  // latest compileSdk
-    ndkVersion "29.0.14206865"   // ⭐ ADD THIS LINE
+    compileSdk = 36  // latest compileSdk
+    ndkVersion "29.0.14206865"   
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

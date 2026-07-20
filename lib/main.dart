@@ -1,3 +1,4 @@
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -11,8 +12,10 @@ import 'package:studentsupportsystem/providers/chatbot_provider.dart';
 import 'package:studentsupportsystem/providers/theme_provider.dart';
 import 'package:studentsupportsystem/screens/splash/splash_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Disable font loading from network
+  GoogleFonts.config.allowRuntimeFetching = false;
   runApp(const MyApp());
 }
 
