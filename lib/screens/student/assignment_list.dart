@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:studentsupportsystem/services/firestore_service.dart';
 import 'upload_assignment.dart';
+import '../file_viewer_screen.dart';
 
 class AssignmentListScreen extends StatelessWidget {
   final FirestoreService firestoreService = FirestoreService();
@@ -70,15 +70,17 @@ class AssignmentListScreen extends StatelessWidget {
                             minimumSize: const Size(0, 0),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          onPressed: () async {
-                            final url = Uri.parse(data['fileUrl']);
-                            if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Could not open the file')),
-                                );
-                              }
-                            }
+                          onPressed: () {
+                            // Navigate to file viewer instead of trying to launch URL
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FileViewerScreen(
+                                  fileId: data['fileUrl'],
+                                  fileName: data['title'] ?? 'Assignment',
+                                ),
+                              ),
+                            );
                           },
                         ),
                     ],

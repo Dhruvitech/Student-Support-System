@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:studentsupportsystem/providers/chatbot_provider.dart';
-import 'package:studentsupportsystem/models/message.dart';
 import 'package:studentsupportsystem/screens/student/conversation_list_screen.dart';
 
 

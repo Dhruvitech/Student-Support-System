@@ -5,7 +5,11 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.9.1'
+<<<<<<< HEAD
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0'
+=======
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0'
+>>>>>>> 81cab8ede9e888091f34d23756ac3fa8f63ad2bd
         classpath 'com.google.gms:google-services:4.4.1' // Firebase Google Services plugin
     }
 }
