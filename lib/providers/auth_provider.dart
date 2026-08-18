@@ -32,28 +32,30 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signUp({
-    required String email,
-    required String password,
-    required String name,
-    required String role,
-    String classGroup = '',
-  }) async {
-    _isLoading = true;
-    notifyListeners();
+  required String email,
+  required String password,
+  required String name,
+  required String role,
+  String classGroup = '',
+  String enrollmentNumber = '', // NEW
+}) async {
+  _isLoading = true;
+  notifyListeners();
 
-    try {
-      _currentUser = await _authService.signUpWithEmailAndPassword(
-        email: email,
-        password: password,
-        name: name,
-        role: role,
-        classGroup: classGroup,
-      );
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+  try {
+    _currentUser = await _authService.signUpWithEmailAndPassword(
+      email: email,
+      password: password,
+      name: name,
+      role: role,
+      classGroup: classGroup,
+      enrollmentNumber: enrollmentNumber, // NEW
+    );
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
 
   Future<void> signIn({
     required String email,

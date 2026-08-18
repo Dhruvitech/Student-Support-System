@@ -19,6 +19,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _enrollmentController = TextEditingController(); // NEW
   String _selectedRole = 'student';
   String _selectedClassGroup = 'IT Sem-6 Div A';
   bool _obscurePassword = true;
@@ -39,6 +40,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _enrollmentController.dispose(); // NEW
     super.dispose();
   }
 
@@ -53,17 +55,19 @@ class _SignupScreenState extends State<SignupScreen> {
         name: _nameController.text.trim(),
         role: _selectedRole,
         classGroup: _selectedRole == 'student' ? _selectedClassGroup : '',
+        enrollmentNumber: _selectedRole == 'student' // NEW
+            ? _enrollmentController.text.trim()
+            : '',
       );
 
       if (!mounted) return;
 
-      // Wait a moment for auth state to update
       await Future.delayed(const Duration(milliseconds: 500));
 
       final user = authProvider.currentUser;
       if (user != null) {
         if (!mounted) return;
-        
+
         if (user.role == 'student') {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const StudentDashboard()),
@@ -74,7 +78,6 @@ class _SignupScreenState extends State<SignupScreen> {
           );
         }
       } else {
-        // If user is still null, show success message and go to login
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -82,7 +85,7 @@ class _SignupScreenState extends State<SignupScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(); // Go back to login screen
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (!mounted) return;
@@ -214,6 +217,20 @@ class _SignupScreenState extends State<SignupScreen> {
                           .toList(),
                       onChanged: (value) => setState(() => _selectedClassGroup = value ?? _selectedClassGroup),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  // NEW: Enrollment Number field
+                  CustomTextField(
+                    controller: _enrollmentController,
+                    label: 'Enrollment Number',
+                    hint: 'Enter your enrollment number',
+                    prefixIcon: Icon(Icons.badge_outlined, color: theme.colorScheme.primary),
+                    validator: (value) {
+                      if (_selectedRole == 'student' && (value == null || value.isEmpty)) {
+                        return 'Please enter your enrollment number';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
                 ],

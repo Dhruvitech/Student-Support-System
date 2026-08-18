@@ -23,6 +23,7 @@ class AuthService {
     required String name,
     required String role,
     String classGroup = '',
+    String enrollmentNumber = '', // NEW
   }) async {
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -36,7 +37,7 @@ class AuthService {
       email: email,
       role: role,
       classGroup: classGroup,
-      enrollmentNumber: '',
+      enrollmentNumber: enrollmentNumber, // CHANGED (was '')
       password: '',
       createdAt: now,
       updatedAt: now,
